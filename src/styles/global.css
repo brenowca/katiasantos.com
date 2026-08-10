@@ -1,0 +1,92 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/space-grotesk';
+@import '@fontsource-variable/inter';
+
+/* ─────────────────────────────────────────────────────────────
+   DESIGN TOKENS — extraídos do fundo da foto profissional
+   Slate #40515F (luz) → #2A3947 (sombra) · Gelo #F4F6F7
+   Display: Space Grotesk · Corpo: Inter
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  --color-ink: #1c262f;
+  --color-slate-deep: #2a3947;
+  --color-slate: #40515f;
+  --color-steel: #7e93a3;
+  --color-mist: #cbd5dc;
+  --color-gelo: #f4f6f7;
+
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Space Grotesk Variable', 'Inter Variable', sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-gelo font-sans text-ink antialiased;
+}
+
+::selection {
+  @apply bg-slate text-gelo;
+}
+
+/* ── Fundo do hero: replica a vinheta da foto (luz à esquerda) ── */
+.bg-retrato {
+  background:
+    radial-gradient(90% 130% at 85% 15%, rgba(15, 24, 32, 0.35), transparent 55%),
+    linear-gradient(105deg, #47586a 0%, #40515f 42%, #2a3947 78%, #22303c 100%);
+}
+
+/* ── Máscara que funde o retrato ao fundo ─────────────────────
+   TODO: ajustar os stops quando entrar a foto em alta resolução */
+.retrato-mask {
+  -webkit-mask-image: radial-gradient(115% 100% at 50% 38%, #000 55%, transparent 82%);
+  mask-image: radial-gradient(115% 100% at 50% 38%, #000 55%, transparent 82%);
+}
+
+/* ── Entrada do hero (executa no load, em cascata) ─────────── */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.hero-rise {
+  animation: rise 0.9s cubic-bezier(0.16, 0.7, 0.3, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* ── Reveal on scroll (IntersectionObserver) ───────────────── */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s ease,
+    transform 0.7s cubic-bezier(0.16, 0.7, 0.3, 1);
+  transition-delay: var(--d, 0ms);
+}
+
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Acessibilidade: respeitar preferência por menos movimento ── */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .hero-rise,
+  [data-reveal] {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

@@ -1,0 +1,93 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import { site } from '../config/site';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = `${site.nome} — ${site.titulo}`,
+  description = site.descricao,
+} = Astro.props;
+
+// Dados estruturados: quem é a Kátia para os buscadores
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: site.nome,
+  jobTitle: 'Estrategista de Marketing Digital',
+  description: site.descricao,
+  telephone: site.telefone,
+  email: site.email,
+  url: site.url,
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: site.cidade,
+    addressRegion: site.uf,
+    addressCountry: 'BR',
+  },
+  sameAs: [site.linkedin],
+  knowsAbout: [
+    'Marketing digital',
+    'Performance',
+    'Growth',
+    'Tráfego pago',
+    'Geração de leads',
+    'Varejo automotivo',
+  ],
+};
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#2A3947" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <!-- Open Graph / redes sociais -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:site_name" content={site.nome} />
+    <meta name="twitter:card" content="summary" />
+
+    <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+
+    <ClientRouter />
+  </head>
+  <body>
+    <slot />
+
+    <script>
+      // Reveal on scroll — re-inicializa a cada navegação (View Transitions)
+      function initReveal() {
+        const alvos = document.querySelectorAll<HTMLElement>('[data-reveal]:not(.is-visible)');
+        if (!alvos.length) return;
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+              }
+            }
+          },
+          { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+        );
+
+        alvos.forEach((el) => observer.observe(el));
+      }
+
+      document.addEventListener('astro:page-load', initReveal);
+    </script>
+  </body>
+</html>

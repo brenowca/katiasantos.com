@@ -1,0 +1,285 @@
+---
+import Base from '../layouts/Base.astro';
+import LogoKS from '../components/LogoKS.astro';
+import {
+  site,
+  numeros,
+  frentes,
+  metodo,
+  citacaoMetodo,
+  trajetoria,
+  linkWhatsApp,
+  linkEmail,
+} from '../config/site';
+
+const nav = [
+  { href: '#atuacao', label: 'Atuação' },
+  { href: '#metodo', label: 'Método' },
+  { href: '#trajetoria', label: 'Trajetória' },
+  { href: '#contato', label: 'Contato' },
+];
+
+const ano = new Date().getFullYear();
+---
+
+<Base>
+  <!-- ══════════════════ HERO ══════════════════ -->
+  <header class="bg-retrato relative overflow-hidden text-gelo">
+    <nav
+      class="relative z-20 mx-auto flex max-w-6xl items-center justify-between px-6 py-6"
+      aria-label="Navegação principal"
+    >
+      <a href="/" class="text-gelo" aria-label="Início">
+        <LogoKS />
+      </a>
+      <div class="hidden items-center gap-8 md:flex">
+        {nav.map((item) => (
+          <a
+            href={item.href}
+            class="text-sm text-mist transition-colors hover:text-gelo"
+          >
+            {item.label}
+          </a>
+        ))}
+      </div>
+      <a
+        href={linkWhatsApp}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="font-display rounded-full border border-steel/70 px-5 py-2 text-sm font-medium transition-all hover:border-gelo hover:bg-gelo hover:text-ink"
+      >
+        Vamos conversar
+      </a>
+    </nav>
+
+    <div class="relative z-10 mx-auto grid max-w-6xl items-end gap-x-8 px-6 lg:grid-cols-12">
+      <div class="pb-16 pt-14 md:pt-20 lg:col-span-7 lg:pb-28">
+        <h1
+          class="font-display hero-rise max-w-xl text-4xl font-medium leading-[1.12] sm:text-5xl md:text-[3.4rem]"
+          style="--d:100ms"
+        >
+          {site.headline}
+        </h1>
+        <p class="hero-rise mt-6 max-w-lg text-lg leading-relaxed text-mist" style="--d:240ms">
+          {site.subheadline}
+        </p>
+        <div class="hero-rise mt-9 flex flex-wrap items-center gap-4" style="--d:380ms">
+          <a
+            href={linkWhatsApp}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-display rounded-full bg-gelo px-7 py-3.5 font-medium text-ink transition-all hover:-translate-y-0.5 hover:bg-white"
+          >
+            Falar com a Kátia
+          </a>
+          <a
+            href="#trajetoria"
+            class="font-display rounded-full border border-steel/70 px-7 py-3.5 font-medium text-gelo transition-all hover:border-gelo hover:bg-gelo/10"
+          >
+            Ver trajetória
+          </a>
+        </div>
+        <p class="hero-rise mt-10 text-sm tracking-wide text-steel" style="--d:520ms">
+          {site.cidade} — {site.uf} &nbsp;·&nbsp; Atendimento remoto em todo o Brasil
+        </p>
+      </div>
+
+      <!-- Retrato fundido ao fundo (mesma cor da foto)
+           TODO: substituir public/katia.jpg pela versão em alta resolução -->
+      <div class="hero-rise relative hidden lg:col-span-5 lg:block" style="--d:300ms">
+        <img
+          src="/katia.jpg"
+          alt={`Retrato profissional de ${site.nome}`}
+          class="retrato-mask w-full max-w-md select-none"
+          width="720"
+          height="674"
+          loading="eager"
+        />
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ══════════════════ PROVA EM NÚMEROS ══════════════════ -->
+    <section class="border-b border-mist/60 bg-white">
+      <div class="mx-auto grid max-w-6xl gap-10 px-6 py-14 sm:grid-cols-3">
+        {numeros.map((n, i) => (
+          <div data-reveal style={`--d:${i * 100}ms`}>
+            <p class="font-display text-4xl font-medium text-slate">{n.valor}</p>
+            <p class="mt-2 max-w-[26ch] text-sm leading-relaxed text-ink/60">{n.label}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- ══════════════════ FRENTES DE ATUAÇÃO ══════════════════ -->
+    <section id="atuacao" class="scroll-mt-16 py-24 md:py-32">
+      <div class="mx-auto max-w-6xl px-6">
+        <h2
+          class="font-display max-w-2xl text-3xl font-medium text-ink md:text-4xl"
+          data-reveal
+        >
+          Frentes de atuação
+        </h2>
+        <p class="mt-4 max-w-xl text-ink/60" data-reveal style="--d:100ms">
+          Da estratégia ao indicador — para empresas que precisam de uma operação
+          de marketing que funcione sem depender de terceiros.
+        </p>
+
+        <div class="mt-14 grid gap-6 sm:grid-cols-2">
+          {frentes.map((f, i) => (
+            <article
+              class="group rounded-2xl border border-mist bg-white p-8 transition-all duration-300 hover:-translate-y-1 hover:border-slate hover:shadow-xl hover:shadow-slate/10"
+              data-reveal
+              style={`--d:${i * 80}ms`}
+            >
+              <span class="flex items-center gap-2" aria-hidden="true">
+                <span class="size-2 rounded-full bg-steel transition-colors duration-300 group-hover:bg-slate" />
+                <span class="h-px w-8 bg-mist transition-all duration-300 group-hover:w-14 group-hover:bg-slate" />
+              </span>
+              <h3 class="font-display mt-5 text-lg font-medium text-ink">{f.titulo}</h3>
+              <p class="mt-3 text-sm leading-relaxed text-ink/60">{f.descricao}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ MÉTODO ══════════════════ -->
+    <section
+      id="metodo"
+      class="scroll-mt-16 bg-slate-deep py-24 text-gelo md:py-32"
+    >
+      <div class="mx-auto max-w-6xl px-6">
+        <h2 class="font-display text-3xl font-medium md:text-4xl" data-reveal>
+          Método de trabalho
+        </h2>
+        <p class="mt-4 max-w-xl text-mist" data-reveal style="--d:100ms">
+          Implantação assistida em cinco fases — do diagnóstico à autonomia do
+          time interno.
+        </p>
+
+        <ol class="mt-16 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-5">
+          {metodo.map((fase, i) => (
+            <li data-reveal style={`--d:${i * 90}ms`}>
+              <p class="font-display text-sm font-medium tracking-[0.2em] text-steel">
+                0{i + 1}
+              </p>
+              <h3 class="font-display mt-3 text-lg font-medium">{fase.titulo}</h3>
+              <p class="mt-2 text-sm leading-relaxed text-mist/80">{fase.descricao}</p>
+            </li>
+          ))}
+        </ol>
+
+        <blockquote
+          class="mt-16 max-w-2xl border-l-2 border-steel pl-6"
+          data-reveal
+        >
+          <p class="font-display text-xl font-medium leading-relaxed text-gelo">
+            "{citacaoMetodo}"
+          </p>
+          <footer class="mt-3 text-sm text-steel">{site.nome}</footer>
+        </blockquote>
+      </div>
+    </section>
+
+    <!-- ══════════════════ TRAJETÓRIA ══════════════════ -->
+    <section id="trajetoria" class="scroll-mt-16 bg-white py-24 md:py-32">
+      <div class="mx-auto max-w-6xl px-6">
+        <div class="flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <h2 class="font-display text-3xl font-medium text-ink md:text-4xl" data-reveal>
+              Trajetória
+            </h2>
+            <p class="mt-4 max-w-xl text-ink/60" data-reveal style="--d:100ms">
+              Sete anos entre estratégia, performance e liderança de núcleo no
+              varejo automotivo.
+            </p>
+          </div>
+          <a
+            href={site.cvPath}
+            download
+            class="font-display rounded-full border border-slate px-6 py-3 text-sm font-medium text-slate transition-all hover:bg-slate hover:text-gelo"
+            data-reveal
+            style="--d:180ms"
+          >
+            Baixar CV (PDF)
+          </a>
+        </div>
+
+        <ol class="mt-14 space-y-12 border-l border-mist pl-8">
+          {trajetoria.map((etapa, i) => (
+            <li class="relative" data-reveal style={`--d:${i * 60}ms`}>
+              <span
+                class="absolute -left-[37px] top-1.5 block size-2.5 rounded-full bg-slate"
+                aria-hidden="true"
+              />
+              <p class="font-display text-sm font-medium tracking-[0.16em] text-steel uppercase">
+                {etapa.periodo}
+              </p>
+              <h3 class="font-display mt-2 text-lg font-medium text-ink">{etapa.titulo}</h3>
+              <p class="mt-2 max-w-2xl text-sm leading-relaxed text-ink/60">
+                {etapa.descricao}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <!-- TODO: seção de depoimentos — reservar espaço quando a Kátia
+         conseguir 2-3 quotes de clientes das concessionárias -->
+
+    <!-- ══════════════════ CONTATO ══════════════════ -->
+    <section id="contato" class="bg-retrato scroll-mt-16 py-24 text-gelo md:py-28">
+      <div class="mx-auto max-w-3xl px-6 text-center">
+        <h2 class="font-display text-3xl font-medium md:text-4xl" data-reveal>
+          Vamos conversar?
+        </h2>
+        <p class="mx-auto mt-5 max-w-xl leading-relaxed text-mist" data-reveal style="--d:100ms">
+          Um diagnóstico honesto do seu marketing — para estruturar, treinar o
+          time e transformar leads em previsibilidade.
+        </p>
+        <div
+          class="mt-10 flex flex-wrap items-center justify-center gap-4"
+          data-reveal
+          style="--d:200ms"
+        >
+          <a
+            href={linkWhatsApp}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-display rounded-full bg-gelo px-7 py-3.5 font-medium text-ink transition-all hover:-translate-y-0.5 hover:bg-white"
+          >
+            WhatsApp
+          </a>
+          <a
+            href={linkEmail}
+            class="font-display rounded-full border border-steel/70 px-7 py-3.5 font-medium text-gelo transition-all hover:border-gelo hover:bg-gelo/10"
+          >
+            {site.email}
+          </a>
+          <a
+            href={site.linkedin}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-display rounded-full border border-steel/70 px-7 py-3.5 font-medium text-gelo transition-all hover:border-gelo hover:bg-gelo/10"
+          >
+            LinkedIn
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ══════════════════ FOOTER ══════════════════ -->
+  <footer class="bg-slate-deep py-10 text-mist/80">
+    <div
+      class="mx-auto flex max-w-6xl flex-col items-center gap-4 px-6 text-center text-sm"
+    >
+      <span class="text-mist/70"><LogoKS /></span>
+      <p>{site.titulo}</p>
+      <p class="text-mist/50">© {ano} {site.nome}</p>
+    </div>
+  </footer>
+</Base>

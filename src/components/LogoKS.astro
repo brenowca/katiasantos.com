@@ -1,0 +1,34 @@
+---
+// Logo "Vetor K": a diagonal superior do K se estende além da caixa
+// da letra e termina num ponto de dado. Cor herdada via currentColor.
+interface Props {
+  assinatura?: boolean;
+  class?: string;
+}
+const { assinatura = false, class: className } = Astro.props;
+---
+
+<span class:list={['inline-flex items-center gap-2.5', className]}>
+  <svg
+    class="h-7 w-auto shrink-0"
+    viewBox="0 0 30 34"
+    fill="none"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path d="M5 3v28" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+    <path d="M5 17l16 14" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+    <path d="M5 17L22.5 6.2" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+    <circle cx="25.8" cy="4.2" r="2.6" fill="currentColor"></circle>
+  </svg>
+  <span class="flex flex-col leading-none">
+    <span class="font-display text-[13px] font-medium tracking-[0.22em]">KATIA SANTOS</span>
+    {
+      assinatura && (
+        <span class="mt-1.5 text-[9px] tracking-[0.26em] text-steel">
+          PERFORMANCE &amp; GROWTH
+        </span>
+      )
+    }
+  </span>
+</span>
