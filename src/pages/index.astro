@@ -186,26 +186,13 @@ const ano = new Date().getFullYear();
     <!-- ══════════════════ TRAJETÓRIA ══════════════════ -->
     <section id="trajetoria" class="scroll-mt-16 bg-white py-24 md:py-32">
       <div class="mx-auto max-w-6xl px-6">
-        <div class="flex flex-wrap items-end justify-between gap-6">
-          <div>
-            <h2 class="font-display text-3xl font-medium text-ink md:text-4xl" data-reveal>
-              Trajetória
-            </h2>
-            <p class="mt-4 max-w-xl text-ink/60" data-reveal style="--d:100ms">
-              Sete anos entre estratégia, performance e liderança de núcleo no
-              varejo automotivo.
-            </p>
-          </div>
-          <a
-            href={site.cvPath}
-            download
-            class="font-display rounded-full border border-slate px-6 py-3 text-sm font-medium text-slate transition-all hover:bg-slate hover:text-gelo"
-            data-reveal
-            style="--d:180ms"
-          >
-            Baixar CV (PDF)
-          </a>
-        </div>
+        <h2 class="font-display text-3xl font-medium text-ink md:text-4xl" data-reveal>
+          Trajetória
+        </h2>
+        <p class="mt-4 max-w-xl text-ink/60" data-reveal style="--d:100ms">
+          Sete anos entre estratégia, performance e liderança de núcleo no
+          varejo automotivo.
+        </p>
 
         <ol class="mt-14 space-y-12 border-l border-mist pl-8">
           {trajetoria.map((etapa, i) => (
