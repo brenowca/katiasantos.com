@@ -28,7 +28,7 @@ Requisito: Node.js 18.17+ (recomendado: 20+).
 | Logo (símbolo + wordmark) | `src/components/LogoKS.astro` |
 | SEO / Open Graph / JSON-LD | `src/layouts/Base.astro` |
 | Retrato do hero | `public/katia.jpg` |
-| CV para download | `public/cv-katia-santos.pdf` |
+| Imagem Open Graph | `public/og.jpg` — gerada a partir de `design/og.html` (instruções de regeneração no cabeçalho do próprio arquivo) |
 
 ## Deploy no Cloudflare Pages
 
@@ -48,7 +48,9 @@ Requisito: Node.js 18.17+ (recomendado: 20+).
       recorte de screenshot) e ajustar a máscara `.retrato-mask` no
       `global.css` se necessário
 - [ ] Criar a caixa `contato@katiasantos.com` no provedor de e-mail do domínio
-- [ ] Imagem Open Graph (`public/og.jpg`, 1200×630) + tag no `Base.astro`
+- [ ] Decidir o destino de `public/cv-katia-santos.pdf`: o botão "Baixar CV"
+      foi removido do site, mas o arquivo segue acessível pela URL direta
+      (apagar, ou manter para enviar o link manualmente)
 - [ ] Depoimentos: seção reservada com `TODO` no `index.astro` (2-3 quotes de
       clientes das concessionárias)
 - [ ] Futuro: página do projeto/case Honda linkada a partir daqui; se quiser,
@@ -62,4 +64,8 @@ Requisito: Node.js 18.17+ (recomendado: 20+).
 - **Animações**: cascata no hero (`.hero-rise`), reveal on scroll
   (`[data-reveal]` + IntersectionObserver), View Transitions do Astro.
   Tudo desativado sob `prefers-reduced-motion`.
+- **Imagem OG**: `design/og.html` replica o hero em 1200×630 usando as fontes
+  de `node_modules/` e a foto de `public/` — renderiza com Chrome headless e
+  comprime com sharp (já presente via Astro). Comandos no cabeçalho do arquivo.
+  Regenerar quando entrarem a foto em alta ou os números reais.
 - Zero JavaScript de framework no cliente.

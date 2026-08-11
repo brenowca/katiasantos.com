@@ -1,0 +1,170 @@
+<!doctype html>
+<!-- ─────────────────────────────────────────────────────────────
+  FONTE DA ARTE OPEN GRAPH (public/og.jpg, 1200×630)
+
+  Regenerar (a partir da raiz do repo):
+
+  1. Renderizar com Chrome headless:
+     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+       --headless=new --screenshot=og.png --window-size=1200,630 \
+       --hide-scrollbars --force-device-scale-factor=1 \
+       "file://$PWD/design/og.html"
+
+  2. Comprimir para JPEG:
+     node -e "require('sharp')('og.png').jpeg({quality:88,mozjpeg:true}).toFile('public/og.jpg')" && rm og.png
+
+  Fontes e foto são referenciadas de node_modules/ e public/ —
+  rode `npm install` antes, e nada precisa ser copiado.
+  ───────────────────────────────────────────────────────────── -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face {
+    font-family: 'Space Grotesk';
+    src: url('../node_modules/@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2') format('woff2');
+    font-weight: 300 700;
+  }
+  @font-face {
+    font-family: 'Inter';
+    src: url('../node_modules/@fontsource-variable/inter/files/inter-latin-opsz-normal.woff2') format('woff2');
+    font-weight: 100 900;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+
+  .card {
+    position: relative;
+    width: 1200px;
+    height: 630px;
+    background:
+      radial-gradient(90% 130% at 85% 15%, rgba(15, 24, 32, 0.35), transparent 55%),
+      linear-gradient(105deg, #47586a 0%, #40515f 42%, #2a3947 78%, #22303c 100%);
+    font-family: 'Inter', sans-serif;
+    color: #f4f6f7;
+  }
+
+  /* Foto à direita, fundida ao fundo */
+  .foto {
+    position: absolute;
+    right: -30px;
+    bottom: 0;
+    height: 660px;
+    width: auto;
+    -webkit-mask-image: radial-gradient(120% 105% at 62% 42%, #000 52%, transparent 78%);
+    mask-image: radial-gradient(120% 105% at 62% 42%, #000 52%, transparent 78%);
+    filter: saturate(0.96);
+  }
+
+  /* Véu para garantir contraste do texto sobre a foto */
+  .veu {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(42, 57, 71, 0.55) 38%, rgba(42, 57, 71, 0) 62%);
+  }
+
+  .conteudo {
+    position: absolute;
+    inset: 0;
+    padding: 64px 72px 56px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Logo */
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .logo svg { height: 44px; width: auto; }
+  .logo-nome {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 21px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+  }
+
+  .miolo { margin-top: auto; max-width: 690px; }
+
+  .kicker {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: #a9bcc9;
+    margin-bottom: 26px;
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 66px;
+    line-height: 1.08;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  h1 .destaque { color: #a9bcc9; }
+
+  .sub {
+    margin-top: 26px;
+    font-size: 25px;
+    line-height: 1.45;
+    font-weight: 400;
+    color: #cbd5dc;
+    max-width: 600px;
+  }
+
+  .rodape {
+    margin-top: 44px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .linha {
+    width: 46px;
+    height: 2px;
+    background: #7e93a3;
+    border-radius: 1px;
+  }
+  .url {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 21px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    color: #a9bcc9;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img class="foto" src="../public/katia.jpg" alt="" />
+    <div class="veu"></div>
+
+    <div class="conteudo">
+      <div class="logo">
+        <svg viewBox="0 0 30 34" fill="none">
+          <path d="M5 3v28" stroke="#f4f6f7" stroke-width="3" stroke-linecap="round"/>
+          <path d="M5 17l16 14" stroke="#f4f6f7" stroke-width="3" stroke-linecap="round"/>
+          <path d="M5 17L22.5 6.2" stroke="#f4f6f7" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="25.8" cy="4.2" r="2.6" fill="#f4f6f7"/>
+        </svg>
+        <span class="logo-nome">KATIA SANTOS</span>
+      </div>
+
+      <div class="miolo">
+        <div class="kicker">Estrategista Digital · Performance &amp; Growth</div>
+        <h1>Marketing que vira <span class="destaque">processo</span>,<br/>não dependência.</h1>
+        <div class="sub">7+ anos de estratégia digital e performance para o varejo automotivo.</div>
+        <div class="rodape">
+          <div class="linha"></div>
+          <div class="url">katiasantos.com</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
