@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "katia-email-studio",
+  "main": "./src/worker/index.ts",
+  "compatibility_date": "2026-09-30",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "r2_buckets": [
+    { "binding": "BUCKET", "bucket_name": "katia-email-cdn" }
+  ],
+  "vars": {
+    // Base pública das imagens usada nas novas campanhas (domínio neutro, mesmo bucket R2).
+    // O bucket também responde em https://cdn.katiasantos.com; campanhas antigas usam esse.
+    "CDN_BASE_URL": "https://cdn.mktassets.com",
+    "LEGACY_CDN_BASE_URL": "https://cdn.katiasantos.com",
+    // Cloudflare Access: domínio do time e AUD do app "studio".
+    "ACCESS_TEAM_DOMAIN": "brenowcarvalho.cloudflareaccess.com",
+    "ACCESS_AUD": "463afcb0666383d318dea4b29e6f7affcc661c5c4764d08f4611f28806fc8a27"
+  },
+  "routes": [
+    { "pattern": "studio.katiasantos.com", "custom_domain": true }
+  ],
+  "observability": { "enabled": true }
+}

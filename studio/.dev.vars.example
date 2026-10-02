@@ -1,0 +1,3 @@
+# Copie para .dev.vars para desenvolvimento local.
+# Pula a verificação do Cloudflare Access (nunca usar em produção).
+DEV_BYPASS_ACCESS=true

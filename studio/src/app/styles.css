@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink: #2a3947;
+  --color-ink-2: #40515f;
+  --color-ink-3: #6b7a87;
+  --color-ice: #f4f6f7;
+  --color-line: #d9dee2;
+  --color-accent: #0e7c86;
+  --color-accent-2: #0a5f67;
+  --color-warn: #b45309;
+  --color-danger: #b91c1c;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+html, body { height: 100%; }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+
+@utility btn-base {
+  display: inline-flex; align-items: center; gap: .5rem; border-radius: .375rem;
+  padding: .5rem .75rem; font-size: .875rem; line-height: 1.25rem; font-weight: 500;
+  transition: background-color .15s, color .15s, border-color .15s; cursor: pointer;
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+
+@layer components {
+  .btn-primary { @apply btn-base bg-accent text-white hover:bg-accent-2; }
+  .btn-secondary { @apply btn-base bg-white text-ink border border-line hover:bg-ice; }
+  .btn-ghost { @apply btn-base text-ink-2 hover:bg-white; }
+  .btn-tool { @apply btn-base border border-line bg-white text-ink-2 hover:bg-ice; }
+  .btn-tool-active { @apply bg-ink text-white border-ink hover:bg-ink; }
+  .input { @apply w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent; }
+  .label { @apply block text-xs font-semibold uppercase tracking-wide text-ink-3 mb-1; }
+  .card { @apply rounded-lg border border-line bg-white p-4; }
+}

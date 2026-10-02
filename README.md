@@ -56,6 +56,12 @@ Requisito: Node.js 18.17+ (recomendado: 20+).
 - [ ] Futuro: página do projeto/case Honda linkada a partir daqui; se quiser,
       uma página `/links` no mesmo padrão do site do Matheus
 
+## Email Studio
+
+A ferramenta de emails fatiados da Kátia fica em [`studio/`](studio/README.md)
+(Worker separado em `studio.katiasantos.com`, imagens em `cdn.katiasantos.com`).
+O site institucional não depende dela.
+
 ## Notas técnicas
 
 - **Retrato fundido**: o gradiente `.bg-retrato` replica a vinheta da foto
