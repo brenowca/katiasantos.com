@@ -45,12 +45,22 @@ export interface Project {
   preheader: string;
   /** Qualidade JPEG de 0 a 1. */
   jpegQuality: number;
+  /**
+   * Parágrafos de texto no rodapé do email (abaixo das imagens).
+   * Novas campanhas nascem com o texto padrão da Honda; vazio = sem rodapé.
+   * Ausente em campanhas antigas, que foram publicadas sem rodapé.
+   */
+  footerLines?: string[];
   rows: Row[];
   /** Preenchidos pelo servidor ao publicar. */
   publishedBy?: string;
   publishedAt?: string;
   /** Base das imagens com que o HTML foi gerado (ex.: https://cdn.mktassets.com). */
   cdnBaseUrl?: string;
+  /** Estado na lista; ausente = ativa. Gravado pelo servidor. */
+  status?: CampaignStatus;
+  statusChangedAt?: string;
+  statusChangedBy?: string;
 }
 
 export interface SliceRef {
@@ -73,11 +83,24 @@ export interface PublishResult {
   cdnBaseUrl: string;
 }
 
+/**
+ * Estado da campanha na lista. Não afeta os arquivos publicados:
+ * imagens e prévia continuam no ar em qualquer estado.
+ */
+export type CampaignStatus = 'active' | 'approved' | 'archived';
+
 export interface CampaignSummary {
   slug: string;
   name: string;
   createdAt: string;
+  status: CampaignStatus;
 }
+
+/** Rodapé padrão: textos obrigatórios nas campanhas da plataforma myHonda (copiados de uma campanha aprovada). */
+export const DEFAULT_FOOTER_LINES: readonly string[] = [
+  'Desacelere, seu bem maior é a vida.',
+  '"Caso prefira não receber mais e-mails da Honda Serviços Financeiros, acesse https://www.honda.com.br/myHonda, faça seu login e solicite o descadastramento."',
+];
 
 let counter = 0;
 export function newId(prefix = 'id'): string {
@@ -108,6 +131,7 @@ export function newProject(
     backgroundColor: '#ffffff',
     preheader: '',
     jpegQuality: 0.85,
+    footerLines: [...DEFAULT_FOOTER_LINES],
     rows: [newRow(0, source.height, source.width)],
   };
 }

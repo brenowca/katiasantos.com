@@ -1,4 +1,4 @@
-import type { Project } from '../../shared/model';
+import { DEFAULT_FOOTER_LINES, type Project } from '../../shared/model';
 import { isValidSlug } from '../../shared/slug';
 
 interface Props {
@@ -44,6 +44,19 @@ export function CampaignPanel({ project, onChange }: Props) {
       <div>
         <label class="label" for="pre">Preheader (texto da prévia na caixa de entrada)</label>
         <input id="pre" class="input" value={project.preheader} onInput={(e) => set('preheader', (e.target as HTMLInputElement).value)} placeholder="Opcional" />
+      </div>
+      <div>
+        <label class="label" for="footer">Rodapé (um parágrafo por linha)</label>
+        <textarea
+          id="footer"
+          class="input min-h-[96px] text-xs"
+          value={(project.footerLines ?? []).join('\n')}
+          onInput={(e) => set('footerLines', (e.target as HTMLTextAreaElement).value.split('\n'))}
+          placeholder="Vazio = sem rodapé"
+        />
+        <button type="button" class="mt-1 text-xs text-accent underline" onClick={() => set('footerLines', [...DEFAULT_FOOTER_LINES])}>
+          Restaurar texto padrão da Honda
+        </button>
       </div>
       <div>
         <label class="label" for="q">Qualidade JPEG: {Math.round(project.jpegQuality * 100)}%</label>

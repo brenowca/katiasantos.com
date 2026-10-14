@@ -29,15 +29,24 @@ respeita essa base. Para trocar o padrão, mude `CDN_BASE_URL` em `wrangler.json
    - Arraste a linha azul para ajustar; o **×** remove o corte. ⌘Z desfaz.
    - **Selecionar** (tecla S): clique numa fatia e preencha **Link** e
      **Texto alternativo**. Use PNG em fatias com texto ou logo; JPEG em fotos.
-   - **Campanha**: cor de fundo, preheader, largura e qualidade JPEG.
+   - **Campanha**: cor de fundo, preheader, largura, qualidade JPEG e o
+     **rodapé** de texto. Toda campanha nasce com o rodapé padrão da Honda
+     ("Desacelere…" e o aviso de descadastramento via myHonda); dá para editar
+     ou apagar, e "Restaurar" volta ao padrão.
    - **Pré-visualizar** mostra o email montado e os avisos (peso, altura, alt vazio).
 4. **Publicar** recorta as fatias no navegador, envia tudo para o CDN e mostra:
-   - **Copiar HTML**: para a equipe da Honda ou qualquer plataforma de disparo.
+   - **Copiar para myHonda**: só o conteúdo, no molde das campanhas aprovadas na
+     plataforma (div + tabela + rodapé obrigatório + tag `<custom name="opencounter">`).
+   - **Copiar HTML completo**: documento inteiro, para outras plataformas de disparo.
    - **Copiar como email (Gmail)**: cole direto na janela de nova mensagem.
    - **Baixar .html** e **Abrir prévia** (link público para aprovação).
    - **Baixar pacote .zip**: HTML com caminhos relativos mais a pasta `imagens/`,
      para quem quer hospedar as imagens em outro lugar.
-5. Campanha publicada nunca muda. Na tela inicial, **Abrir** mostra de novo os
+5. A lista da tela inicial tem três abas: **Ativas**, **Aprovadas** e
+   **Arquivadas**. Em cada campanha dá para marcar como aprovada (quando a
+   Honda aprovar), arquivar ou restaurar. É só organização: nada é apagado e as
+   imagens continuam no ar em qualquer estado.
+6. Campanha publicada nunca muda. Na tela inicial, **Abrir** mostra de novo os
    botões de copiar e baixar o HTML de uma campanha já publicada. Para corrigir
    um link, use **Duplicar**: abre uma cópia com os mesmos cortes e links, e
    publica em pasta nova.

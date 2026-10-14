@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { isValidSlug } from '../shared/slug';
-import type { CampaignSummary, Project, PublishResult } from '../shared/model';
+import type { CampaignStatus, CampaignSummary, Project, PublishResult } from '../shared/model';
 import { requireAccess, type AccessEnv, type AccessUser } from './access';
 
 export interface Env extends AccessEnv {
@@ -21,17 +21,28 @@ app.use('/api/*', requireAccess);
 
 app.get('/api/me', (c) => c.json({ email: c.get('user').email, cdnBaseUrl: c.env.CDN_BASE_URL }));
 
-/** Lista campanhas publicadas (mais recentes primeiro). */
+/** Todas as pastas de campanha, paginando o bucket. */
+async function listSlugs(bucket: R2Bucket): Promise<string[]> {
+  const slugs: string[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await bucket.list({ prefix: PREFIX, delimiter: '/', cursor });
+    for (const p of page.delimitedPrefixes) slugs.push(p.slice(PREFIX.length).replace(/\/$/, ''));
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+  return slugs;
+}
+
+/** Lista campanhas publicadas (mais recentes primeiro), com o estado de cada uma. */
 app.get('/api/campaigns', async (c) => {
-  const listed = await c.env.BUCKET.list({ prefix: PREFIX, delimiter: '/' });
-  const slugs = listed.delimitedPrefixes.map((p) => p.slice(PREFIX.length).replace(/\/$/, ''));
+  const slugs = await listSlugs(c.env.BUCKET);
   const summaries = await Promise.all(
     slugs.map(async (slug): Promise<CampaignSummary | null> => {
       const obj = await c.env.BUCKET.get(`${PREFIX}${slug}/project.json`);
       if (!obj) return null;
       try {
         const p = (await obj.json()) as Project;
-        return { slug, name: p.name, createdAt: p.createdAt };
+        return { slug, name: p.name, createdAt: p.createdAt, status: p.status ?? 'active' };
       } catch {
         return null;
       }
@@ -76,6 +87,31 @@ app.get('/api/campaigns/:slug/slice/:filename', async (c) => {
   obj.writeHttpMetadata(headers);
   headers.set('Cache-Control', 'private, max-age=0');
   return new Response(obj.body, { headers });
+});
+
+const STATUSES: CampaignStatus[] = ['active', 'approved', 'archived'];
+
+/**
+ * Muda o estado da campanha na lista (ativa, aprovada, arquivada).
+ * Reescreve só o project.json; imagens e index.html ficam intactos.
+ */
+app.post('/api/campaigns/:slug/status', async (c) => {
+  const slug = c.req.param('slug');
+  if (!isValidSlug(slug)) return c.json({ error: 'Slug inválido.' }, 400);
+  const body = (await c.req.json().catch(() => null)) as { status?: string } | null;
+  const status = body?.status as CampaignStatus | undefined;
+  if (!status || !STATUSES.includes(status)) return c.json({ error: 'Estado inválido.' }, 400);
+  const key = `${PREFIX}${slug}/project.json`;
+  const obj = await c.env.BUCKET.get(key);
+  if (!obj) return c.json({ error: 'Campanha não encontrada.' }, 404);
+  const project = (await obj.json()) as Project;
+  project.status = status;
+  project.statusChangedAt = new Date().toISOString();
+  project.statusChangedBy = c.get('user').email;
+  await c.env.BUCKET.put(key, JSON.stringify(project, null, 2), {
+    httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
+  });
+  return c.json({ slug, status });
 });
 
 app.get('/api/campaigns/:slug/exists', async (c) => {

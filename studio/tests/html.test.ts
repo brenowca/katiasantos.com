@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { splitCell, splitRow, updateCell } from '../src/shared/geometry';
-import { checkLimits, generateEmailHtml } from '../src/shared/html';
+import { checkLimits, generateEmailHtml, generateMyHondaFragment } from '../src/shared/html';
 import { newProject } from '../src/shared/model';
 
 function sample() {
@@ -32,6 +32,14 @@ describe('generateEmailHtml', () => {
     expect(document).toContain('<title>Civic &amp; Cia</title>');
     expect(document).toContain('Condições &lt;especiais&gt;');
   });
+  it('inclui o rodapé padrão e permite removê-lo', () => {
+    expect(document).toContain('Desacelere, seu bem maior é a vida.');
+    expect(document).toContain('solicite o descadastramento');
+    const semRodape = { ...sample(), footerLines: [] };
+    expect(generateEmailHtml(semRodape, 'https://x').document).not.toContain('Desacelere');
+    const legado = { ...sample(), footerLines: undefined };
+    expect(generateEmailHtml(legado, 'https://x').document).not.toContain('Desacelere');
+  });
   it('tem tabela aninhada para colunas e ghost table do Outlook', () => {
     expect(fragment).toContain('<td width="300"');
     expect(fragment).toContain('<!--[if mso]><table role="presentation" width="600"');
@@ -61,5 +69,24 @@ describe('pacote com caminhos relativos', () => {
     expect(document).toContain('src="imagens/01.jpg"');
     expect(document).toContain('src="imagens/02-a.png"');
     expect(document).not.toContain('cdn.katiasantos.com');
+  });
+});
+
+describe('generateMyHondaFragment', () => {
+  const frag = generateMyHondaFragment(sample(), 'https://cdn.mktassets.com/c/2026-10-civic');
+  it('é só um fragmento, sem documento', () => {
+    expect(frag.startsWith('<div ')).toBe(true);
+    expect(frag).not.toMatch(/<!DOCTYPE|<html|<head|<body|<style|\[if mso\]/);
+  });
+  it('campanha antiga sem campo recebe o rodapé padrão no fragmento', () => {
+    const legado = { ...sample(), footerLines: undefined };
+    expect(generateMyHondaFragment(legado, 'https://x')).toContain('Desacelere');
+  });
+  it('tem as imagens, o rodapé obrigatório e a tag de rastreamento', () => {
+    expect(frag.match(/<img /g)).toHaveLength(3);
+    expect(frag).toContain('src="https://cdn.mktassets.com/c/2026-10-civic/01.jpg"');
+    expect(frag).toContain('Desacelere, seu bem maior é a vida.');
+    expect(frag).toContain('solicite o descadastramento');
+    expect(frag).toContain('<custom name="opencounter" type="tracking" />');
   });
 });

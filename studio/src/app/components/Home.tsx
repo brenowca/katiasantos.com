@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { CampaignSummary, Project, PublishResult } from '../../shared/model';
+import type { CampaignStatus, CampaignSummary, Project, PublishResult } from '../../shared/model';
 import { generateEmailHtml } from '../../shared/html';
-import { newProject } from '../../shared/model';
+import { DEFAULT_FOOTER_LINES, newProject } from '../../shared/model';
 import { isValidSlug, suggestSlug } from '../../shared/slug';
-import { getOriginal, getProject, listCampaigns, slugExists } from '../api';
+import { getOriginal, getProject, listCampaigns, setStatus, slugExists } from '../api';
 import { loadImage, type LoadedImage } from '../slicer';
 
 interface Props {
@@ -11,6 +11,9 @@ interface Props {
   onStart: (project: Project, image: LoadedImage) => void;
   onOpen: (project: Project, result: PublishResult, html: { document: string; fragment: string }) => void;
 }
+
+const STATUS_LABEL: Record<CampaignStatus, string> = { active: 'Ativas', approved: 'Aprovadas', archived: 'Arquivadas' };
+const STATUS_DONE: Record<CampaignStatus, string> = { active: 'voltou para ativas', approved: 'marcada como aprovada', archived: 'arquivada' };
 
 export function Home({ cdnBaseUrl, onStart, onOpen }: Props) {
   const [name, setName] = useState('');
@@ -21,6 +24,8 @@ export function Home({ cdnBaseUrl, onStart, onOpen }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [campaigns, setCampaigns] = useState<CampaignSummary[] | null>(null);
   const [dupBusy, setDupBusy] = useState<string | null>(null);
+  const [filter, setFilter] = useState<CampaignStatus>('active');
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     listCampaigns()
@@ -51,6 +56,19 @@ export function Home({ cdnBaseUrl, onStart, onOpen }: Props) {
       setError((err as Error).message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  /** Muda o estado na lista. Reversível; por isso sem confirmação. */
+  async function changeStatus(c: CampaignSummary, status: CampaignStatus) {
+    setError(null);
+    try {
+      await setStatus(c.slug, status);
+      setCampaigns((list) => (list ?? []).map((x) => (x.slug === c.slug ? { ...x, status } : x)));
+      setNotice(`"${c.name}" ${STATUS_DONE[status]}.`);
+      setTimeout(() => setNotice(null), 3000);
+    } catch (err) {
+      setError((err as Error).message);
     }
   }
 
@@ -87,6 +105,10 @@ export function Home({ cdnBaseUrl, onStart, onOpen }: Props) {
         publishedAt: undefined,
         publishedBy: undefined,
         cdnBaseUrl: undefined,
+        status: undefined,
+        statusChangedAt: undefined,
+        statusChangedBy: undefined,
+        footerLines: old.footerLines ?? [...DEFAULT_FOOTER_LINES],
       };
       onStart(project, image);
     } catch (err) {
@@ -96,8 +118,10 @@ export function Home({ cdnBaseUrl, onStart, onOpen }: Props) {
     }
   }
 
+  const visible = (campaigns ?? []).filter((c) => c.status === filter);
+
   return (
-    <div class="mx-auto grid max-w-[1400px] gap-6 px-4 py-8 lg:grid-cols-[1fr_380px]">
+    <div class="mx-auto grid max-w-[1400px] gap-6 px-4 py-8 lg:grid-cols-[1fr_420px]">
       <form class="card space-y-5" onSubmit={start}>
         <div>
           <h1 class="text-lg font-semibold">Nova campanha</h1>
@@ -150,24 +174,58 @@ export function Home({ cdnBaseUrl, onStart, onOpen }: Props) {
       <aside class="card">
         <h2 class="text-sm font-semibold">Campanhas publicadas</h2>
         <p class="mt-1 text-xs text-ink-3">
-          <strong>Abrir</strong> mostra de novo o HTML e os links para copiar. <strong>Duplicar</strong> cria uma cópia editável; a original nunca muda.
+          <strong>Abrir</strong> mostra de novo o HTML para copiar. <strong>Duplicar</strong> cria uma cópia editável; a original nunca muda.
         </p>
-        <ul class="mt-3 divide-y divide-line">
+        <div class="mt-3 flex gap-1 rounded-md bg-ice p-1 text-xs">
+          {(['active', 'approved', 'archived'] as const).map((st) => {
+            const n = campaigns?.filter((c) => c.status === st).length ?? 0;
+            return (
+              <button
+                type="button"
+                class={`flex-1 rounded px-2 py-1 font-medium ${filter === st ? 'bg-white text-ink shadow-sm' : 'text-ink-3 hover:text-ink'}`}
+                onClick={() => setFilter(st)}
+              >
+                {STATUS_LABEL[st]} ({n})
+              </button>
+            );
+          })}
+        </div>
+        {notice && <div class="mt-2 rounded-md bg-accent/10 px-3 py-1.5 text-xs text-accent">{notice}</div>}
+        <ul class="mt-2 divide-y divide-line">
           {campaigns === null && <li class="py-2 text-sm text-ink-3">Carregando…</li>}
-          {campaigns?.length === 0 && <li class="py-2 text-sm text-ink-3">Nenhuma ainda.</li>}
-          {campaigns?.map((c) => (
-            <li key={c.slug} class="flex items-center justify-between gap-2 py-2">
-              <div class="min-w-0">
-                <div class="truncate text-sm font-medium">{c.name}</div>
-                <div class="truncate font-mono text-xs text-ink-3">{c.slug}</div>
+          {campaigns && visible.length === 0 && <li class="py-2 text-sm text-ink-3">Nenhuma {STATUS_LABEL[filter].toLowerCase()}.</li>}
+          {visible.map((c) => (
+            <li key={c.slug} class="py-2">
+              <div class="flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <div class={`truncate text-sm font-medium ${c.status === 'archived' ? 'text-ink-3' : ''}`}>{c.name}</div>
+                  <div class="truncate font-mono text-xs text-ink-3">{c.slug}</div>
+                </div>
+                <div class="flex shrink-0 gap-1">
+                  <button type="button" class="btn-primary" onClick={() => open(c)} disabled={dupBusy !== null}>
+                    {dupBusy === c.slug ? '…' : 'Abrir'}
+                  </button>
+                  <button type="button" class="btn-secondary" onClick={() => duplicate(c)} disabled={dupBusy !== null}>
+                    Duplicar
+                  </button>
+                </div>
               </div>
-              <div class="flex shrink-0 gap-1">
-                <button type="button" class="btn-primary" onClick={() => open(c)} disabled={dupBusy !== null}>
-                  {dupBusy === c.slug ? '…' : 'Abrir'}
-                </button>
-                <button type="button" class="btn-secondary" onClick={() => duplicate(c)} disabled={dupBusy !== null}>
-                  Duplicar
-                </button>
+              <div class="mt-1 flex gap-3 text-xs">
+                {c.status === 'active' && (
+                  <>
+                    <button type="button" class="text-accent hover:underline" onClick={() => changeStatus(c, 'approved')}>✓ Marcar aprovada</button>
+                    <button type="button" class="text-ink-3 hover:underline" onClick={() => changeStatus(c, 'archived')}>Arquivar</button>
+                  </>
+                )}
+                {c.status === 'approved' && (
+                  <>
+                    <span class="text-accent">✓ Aprovada</span>
+                    <button type="button" class="text-ink-3 hover:underline" onClick={() => changeStatus(c, 'archived')}>Arquivar</button>
+                  </>
+                )}
+                {c.status === 'archived' && (
+                  <button type="button" class="text-ink-3 hover:underline" onClick={() => changeStatus(c, 'active')}>Restaurar para ativas</button>
+                )}
               </div>
             </li>
           ))}

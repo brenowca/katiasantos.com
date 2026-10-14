@@ -1,4 +1,4 @@
-import type { CampaignSummary, Project, PublishResult } from '../shared/model';
+import type { CampaignStatus, CampaignSummary, Project, PublishResult } from '../shared/model';
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -37,6 +37,14 @@ export async function getSlice(slug: string, filename: string): Promise<Uint8Arr
   const res = await fetch(`/api/campaigns/${slug}/slice/${filename}`);
   if (!res.ok) throw new Error(`Não foi possível baixar a fatia ${filename}.`);
   return new Uint8Array(await res.arrayBuffer());
+}
+
+export function setStatus(slug: string, status: CampaignStatus) {
+  return fetch(`/api/campaigns/${slug}/status`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  }).then((r) => json<{ slug: string; status: CampaignStatus }>(r));
 }
 
 export function slugExists(slug: string) {

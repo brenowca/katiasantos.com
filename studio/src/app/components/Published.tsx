@@ -1,7 +1,7 @@
 import { strToU8, zipSync } from 'fflate';
 import { useState } from 'preact/hooks';
 import { slices } from '../../shared/geometry';
-import { generateEmailHtml } from '../../shared/html';
+import { generateEmailHtml, generateMyHondaFragment } from '../../shared/html';
 import type { Project, PublishResult } from '../../shared/model';
 import { getSlice } from '../api';
 
@@ -19,6 +19,13 @@ export function Published({ project, result, html, onNew }: Props) {
   function flash(s: string) {
     setMsg(s);
     setTimeout(() => setMsg(null), 2500);
+  }
+
+  /** Fragmento no molde das campanhas aprovadas na plataforma myHonda. */
+  async function copyMyHonda() {
+    const frag = generateMyHondaFragment(project, `${result.cdnBaseUrl}/c/${project.slug}`);
+    await navigator.clipboard.writeText(frag);
+    flash('HTML para myHonda copiado: só o conteúdo, com rodapé obrigatório e contador de abertura.');
   }
 
   async function copyHtml() {
@@ -89,8 +96,10 @@ export function Published({ project, result, html, onNew }: Props) {
         </div>
 
         <div class="card space-y-2">
-          <button class="btn-primary w-full justify-center" onClick={copyHtml}>Copiar HTML</button>
-          <p class="text-xs text-ink-3">Para a equipe da Honda ou qualquer plataforma que aceite HTML.</p>
+          <button class="btn-primary w-full justify-center" onClick={copyMyHonda}>Copiar para myHonda</button>
+          <p class="text-xs text-ink-3">Só o conteúdo, no molde das campanhas aprovadas: rodapé obrigatório e contador de abertura incluídos.</p>
+          <button class="btn-secondary w-full justify-center" onClick={copyHtml}>Copiar HTML completo</button>
+          <p class="text-xs text-ink-3">Documento inteiro, para outras plataformas de disparo.</p>
           <button class="btn-secondary w-full justify-center" onClick={copyRich}>Copiar como email (Gmail)</button>
           <p class="text-xs text-ink-3">Cole direto na mensagem. Os links e imagens vêm junto.</p>
           <button class="btn-secondary w-full justify-center" onClick={download}>Baixar arquivo .html</button>

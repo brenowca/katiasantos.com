@@ -1,5 +1,5 @@
 import { displayColumns, displayHeight, slices } from './geometry';
-import type { Project } from './model';
+import { DEFAULT_FOOTER_LINES, type Project } from './model';
 
 export interface EmailHtml {
   /** Documento completo (doctype, head, body). Para colar na plataforma de disparo ou baixar. */
@@ -18,6 +18,17 @@ export function escapeHtml(s: string): string {
 
 export function escapeAttr(s: string): string {
   return escapeHtml(s).replace(/'/g, '&#39;');
+}
+
+const FOOTER_TD_STYLE =
+  'text-align:center;font-style:normal;font-weight:300;font-size:11px;line-height:16px;color:#000000;font-family:Gotham,Helvetica Neue,Helvetica,Arial,sans-serif;';
+
+/** Tabela de rodapé com um parágrafo por linha. Vazio = sem rodapé. */
+export function footerTable(lines: readonly string[] | undefined, width: number): string {
+  const rows = (lines ?? []).map((t) => t.trim()).filter(Boolean);
+  if (!rows.length) return '';
+  const trs = rows.map((t) => `<tr><td bgcolor="#f8f5f5" style="${FOOTER_TD_STYLE}">${escapeHtml(t)}</td></tr>`).join('\n');
+  return `<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="5" bgcolor="#f8f5f5" align="center" style="width:100%;max-width:${width}px;margin:0 auto;background-color:#f8f5f5;">\n${trs}\n</table>`;
 }
 
 const IMG_STYLE = 'display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;';
@@ -71,10 +82,13 @@ export function generateEmailHtml(project: Project, folderUrl: string): EmailHtm
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;width:100%;max-width:${W}px;margin:0 auto;">`,
     rowsHtml,
     `</table>`,
+    footerTable(project.footerLines, W),
     `<!--[if mso]></td></tr></table><![endif]-->`,
     `</td></tr>`,
     `</table>`,
-  ].join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   const preheader = project.preheader.trim()
     ? `<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">${escapeHtml(project.preheader.trim())}</div>\n`
@@ -153,4 +167,53 @@ export function checkLimits(project: Project, html: string, sliceSizes: Map<stri
     out.push({ level: 'warn', message: `${empty.length} fatia(s) sem texto alternativo. Quem abre com imagens bloqueadas não verá nada.` });
   }
   return out;
+}
+
+
+/**
+ * Fragmento para colar no editor da plataforma myHonda, no mesmo molde de uma
+ * campanha aprovada: só uma div com o conteúdo, sem doctype, head, body, style
+ * nem comentários condicionais. Inclui o rodapé obrigatório e a tag de
+ * rastreamento de abertura da plataforma.
+ */
+export function generateMyHondaFragment(project: Project, folderUrl: string): string {
+  const W = project.displayWidth;
+  const base = folderUrl.replace(/\/+$/, '');
+  const refs = slices(project);
+  const byCell = new Map(refs.map((r) => [r.cellId, r]));
+
+  const rows = project.rows
+    .map((row) => {
+      const h = displayHeight(row, project.source.width, W);
+      if (row.cells.length === 1) {
+        const cell = row.cells[0]!;
+        const ref = byCell.get(cell.id)!;
+        return `<tr><td style="padding:0;">${linked(cell.href, img(`${base}/${ref.filename}`, W, h, cell.alt))}</td></tr>`;
+      }
+      const widths = displayColumns(row, project.source.width, W);
+      const tds = row.cells
+        .map((cell, i) => {
+          const ref = byCell.get(cell.id)!;
+          const w = widths[i]!;
+          return `<td width="${w}" valign="top" style="padding:0;width:${w}px;">${linked(cell.href, img(`${base}/${ref.filename}`, w, h, cell.alt))}</td>`;
+        })
+        .join('');
+      return `<tr><td style="padding:0;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>${tds}</tr></table></td></tr>`;
+    })
+    .join('\n');
+
+  const footer = footerTable(project.footerLines ?? DEFAULT_FOOTER_LINES, W);
+
+  return [
+    `<div style="width:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;">`,
+    `<table width="${W}" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:${W}px;max-width:${W}px;">`,
+    rows,
+    `</table>`,
+    footer ? `<br />` : '',
+    footer,
+    `<custom name="opencounter" type="tracking" />`,
+    `</div>`,
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
