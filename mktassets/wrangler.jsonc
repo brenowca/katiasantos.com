@@ -1,0 +1,12 @@
+{
+  "$schema": "../studio/node_modules/wrangler/config-schema.json",
+  // Página institucional de mktassets.com (só arquivos estáticos, sem código).
+  // Deploy: cd mktassets && ../studio/node_modules/.bin/wrangler deploy
+  "name": "mktassets-site",
+  "compatibility_date": "2026-09-30",
+  "assets": { "directory": "./public" },
+  "routes": [
+    { "pattern": "mktassets.com", "custom_domain": true },
+    { "pattern": "www.mktassets.com", "custom_domain": true }
+  ]
+}
