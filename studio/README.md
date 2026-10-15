@@ -35,8 +35,13 @@ respeita essa base. Para trocar o padrão, mude `CDN_BASE_URL` em `wrangler.json
      ou apagar, e "Restaurar" volta ao padrão.
    - **Pré-visualizar** mostra o email montado e os avisos (peso, altura, alt vazio).
 4. **Publicar** recorta as fatias no navegador, envia tudo para o CDN e mostra:
-   - **Copiar para myHonda**: só o conteúdo, no molde das campanhas aprovadas na
-     plataforma (div + tabela + rodapé obrigatório + tag `<custom name="opencounter">`).
+   - **Copiar para myHonda**: imagem única (a arte inteira em `full.jpg`) com um
+     mapa de links (`<map>`/`<area>`, um retângulo por célula com link), no molde
+     exato de uma campanha aprovada na plataforma: div + img + map + rodapé
+     obrigatório + tag `<custom name="opencounter">`. Campanhas publicadas antes
+     desse formato geram a arte inteira na primeira vez que o botão é usado.
+   - **Copiar para myHonda (fatiado)**: a versão anterior, em tabela de fatias,
+     para comparação se a imagem única for recusada.
    - **Copiar HTML completo**: documento inteiro, para outras plataformas de disparo.
    - **Copiar como email (Gmail)**: cole direto na janela de nova mensagem.
    - **Baixar .html** e **Abrir prévia** (link público para aprovação).
@@ -58,7 +63,8 @@ c/<slug>/
   01.jpg  02-a.png  02-b.png  ...   fatias (cache de 1 ano, imutáveis)
   index.html                        prévia pública = HTML entregue
   original                          arte completa (usada no "Duplicar")
-  project.json                      cortes, links, alts
+  full.jpg (ou full.png)            arte inteira na largura de exibição (myHonda)
+  project.json                      cortes, links, alts, fullImage
 ```
 
 ## Desenvolvimento
