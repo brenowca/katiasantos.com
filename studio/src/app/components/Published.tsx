@@ -60,6 +60,18 @@ export function Published({ project: initial, result, html, onNew }: Props) {
     }
   }
 
+  /** Mesmo conteúdo do copiar, como arquivo .txt para anexar ou enviar à plataforma. */
+  async function downloadMyHondaTxt() {
+    try {
+      const p = await ensureFull();
+      const frag = generateMyHondaImageMap(p, `${result.cdnBaseUrl}/c/${p.slug}`, p.fullImage!);
+      saveBlob(new Blob([frag], { type: 'text/plain;charset=utf-8' }), `${p.slug}-myhonda.txt`);
+      flash('Arquivo .txt para myHonda gerado: imagem única com mapa de links, rodapé e contador de abertura.');
+    } catch (err) {
+      flash((err as Error).message);
+    }
+  }
+
   /** Versão anterior: tabela de fatias, para comparação caso a plataforma recuse a imagem única. */
   async function copyMyHondaSliced() {
     const frag = generateMyHondaFragment(project, `${result.cdnBaseUrl}/c/${project.slug}`);
@@ -135,12 +147,16 @@ export function Published({ project: initial, result, html, onNew }: Props) {
         </div>
 
         <div class="card space-y-2">
-          <button class="btn-primary w-full justify-center" onClick={copyMyHonda} disabled={preparing}>
-            {preparing ? 'Preparando…' : 'Copiar para myHonda'}
+          <button class="btn-primary w-full justify-center" onClick={downloadMyHondaTxt} disabled={preparing}>
+            {preparing ? 'Preparando…' : 'Baixar .txt para myHonda'}
           </button>
           <p class="text-xs text-ink-3">
             Imagem única com mapa de links, no molde exato de uma campanha aprovada: rodapé obrigatório e contador de abertura incluídos.
           </p>
+          <button class="btn-secondary w-full justify-center" onClick={copyMyHonda} disabled={preparing}>
+            Copiar para myHonda
+          </button>
+          <p class="text-xs text-ink-3">O mesmo conteúdo do .txt, direto na área de transferência.</p>
           <button class="btn-secondary w-full justify-center" onClick={copyMyHondaSliced}>Copiar para myHonda (fatiado)</button>
           <p class="text-xs text-ink-3">Versão anterior, em tabela de fatias. Use só se a imagem única for recusada.</p>
           <button class="btn-secondary w-full justify-center" onClick={copyHtml}>Copiar HTML completo</button>

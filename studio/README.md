@@ -35,7 +35,8 @@ respeita essa base. Para trocar o padrão, mude `CDN_BASE_URL` em `wrangler.json
      ou apagar, e "Restaurar" volta ao padrão.
    - **Pré-visualizar** mostra o email montado e os avisos (peso, altura, alt vazio).
 4. **Publicar** recorta as fatias no navegador, envia tudo para o CDN e mostra:
-   - **Copiar para myHonda**: imagem única (a arte inteira em `full.jpg`) com um
+   - **Baixar .txt para myHonda** (botão principal) e **Copiar para myHonda**, com o
+     mesmo conteúdo: imagem única (a arte inteira em `full.jpg`) com um
      mapa de links (`<map>`/`<area>`, um retângulo por célula com link), no molde
      exato de uma campanha aprovada na plataforma: div + img + map + rodapé
      obrigatório + tag `<custom name="opencounter">`. Campanhas publicadas antes
