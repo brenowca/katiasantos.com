@@ -57,12 +57,6 @@ export interface Project {
   publishedAt?: string;
   /** Base das imagens com que o HTML foi gerado (ex.: https://cdn.mktassets.com). */
   cdnBaseUrl?: string;
-  /**
-   * Arte inteira na largura de exibição (ex.: full.jpg), usada na exportação
-   * em imagem única com mapa de links (myHonda). Gravado pelo servidor;
-   * campanhas antigas não têm e geram sob demanda.
-   */
-  fullImage?: string;
   /** Estado na lista; ausente = ativa. Gravado pelo servidor. */
   status?: CampaignStatus;
   statusChangedAt?: string;
@@ -81,12 +75,6 @@ export interface SliceRef {
   y: number;
   width: number;
   height: number;
-}
-
-/** Nome do arquivo da arte inteira: PNG só se todas as fatias forem PNG. */
-export function fullImageFilename(project: Pick<Project, 'rows'>): string {
-  const allPng = project.rows.every((r) => r.cells.every((c) => c.format === 'png'));
-  return allPng ? 'full.png' : 'full.jpg';
 }
 
 export interface PublishResult {
@@ -111,7 +99,7 @@ export interface CampaignSummary {
 /** Rodapé padrão: textos obrigatórios nas campanhas da plataforma myHonda (copiados de uma campanha aprovada). */
 export const DEFAULT_FOOTER_LINES: readonly string[] = [
   'Desacelere, seu bem maior é a vida.',
-  '"Caso prefira não receber mais e-mails da Honda Serviços Financeiros, acesse https://www.honda.com.br/myHonda, faça seu login e solicite o descadastramento."',
+  'Caso prefira não receber mais e-mails da Honda Serviços Financeiros, acesse https://www.honda.com.br/myHonda, faça seu login e solicite o descadastramento.',
 ];
 
 let counter = 0;

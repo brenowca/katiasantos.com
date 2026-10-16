@@ -1,5 +1,5 @@
 import { slices } from '../shared/geometry';
-import { fullImageFilename, type Project } from '../shared/model';
+import type { Project } from '../shared/model';
 
 export interface LoadedImage {
   file: File;
@@ -52,31 +52,6 @@ export async function sliceAll(
     onProgress?.(done, refs.length);
   }
   return out;
-}
-
-/**
- * Arte inteira reduzida à largura de exibição, para a exportação em imagem
- * única com mapa de links. JPEG com a qualidade do projeto, ou PNG se todas as
- * fatias forem PNG.
- */
-export async function renderFull(image: LoadedImage, project: Project): Promise<{ filename: string; blob: Blob }> {
-  const filename = fullImageFilename(project);
-  const W = project.displayWidth;
-  const H = Math.round(project.source.height * (W / project.source.width));
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d', { alpha: true });
-  if (!ctx) throw new Error('Canvas indisponível.');
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  if (filename.endsWith('.jpg')) {
-    ctx.fillStyle = project.backgroundColor || '#ffffff';
-    ctx.fillRect(0, 0, W, H);
-  }
-  ctx.drawImage(image.element, 0, 0, project.source.width, project.source.height, 0, 0, W, H);
-  const blob = filename.endsWith('.jpg') ? await toBlob(canvas, 'image/jpeg', project.jpegQuality) : await toBlob(canvas, 'image/png');
-  return { filename, blob };
 }
 
 export function formatBytes(n: number): string {

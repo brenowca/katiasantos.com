@@ -16,7 +16,7 @@ import { checkLimits, generateEmailHtml, type Warning } from '../../shared/html'
 import type { Project, PublishResult } from '../../shared/model';
 import { isValidSlug } from '../../shared/slug';
 import { publish, slugExists } from '../api';
-import { formatBytes, renderFull, sliceAll, type LoadedImage } from '../slicer';
+import { formatBytes, sliceAll, type LoadedImage } from '../slicer';
 import { CellPanel } from './CellPanel';
 import { CampaignPanel } from './CampaignPanel';
 
@@ -208,13 +208,10 @@ export function Editor({ initialProject, image, cdnBaseUrl, onCancel, onPublishe
         return;
       }
       const blobs = await sliceAll(image, project, (d, t) => setStatus(`Recortando ${d}/${t}…`));
-      setStatus('Gerando arte inteira…');
-      const full = await renderFull(image, project);
       const html = generateEmailHtml(project, folderUrl);
       setStatus('Enviando…');
-      const toSend = { ...project, fullImage: full.filename };
-      const result = await publish(toSend, html.document, image.file, blobs, full, (f) => setStatus(`Enviando ${Math.round(f * 100)}%…`));
-      onPublished(toSend, result, html);
+      const result = await publish(project, html.document, image.file, blobs, (f) => setStatus(`Enviando ${Math.round(f * 100)}%…`));
+      onPublished(project, result, html);
     } catch (err) {
       setError((err as Error).message);
     } finally {

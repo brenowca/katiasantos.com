@@ -1,10 +1,9 @@
 import { strToU8, zipSync } from 'fflate';
 import { useState } from 'preact/hooks';
 import { slices } from '../../shared/geometry';
-import { generateEmailHtml, generateMyHondaFragment, generateMyHondaImageMap } from '../../shared/html';
+import { generateEmailHtml, generateMyHondaFragment } from '../../shared/html';
 import type { Project, PublishResult } from '../../shared/model';
-import { getOriginal, getSlice, uploadFull } from '../api';
-import { loadImage, renderFull } from '../slicer';
+import { getSlice } from '../api';
 
 interface Props {
   project: Project;
@@ -13,70 +12,29 @@ interface Props {
   onNew: () => void;
 }
 
-export function Published({ project: initial, result, html, onNew }: Props) {
-  const [project, setProject] = useState(initial);
+export function Published({ project, result, html, onNew }: Props) {
   const [msg, setMsg] = useState<string | null>(null);
   const [packing, setPacking] = useState(false);
-  const [preparing, setPreparing] = useState(false);
 
   function flash(s: string) {
     setMsg(s);
     setTimeout(() => setMsg(null), 2500);
   }
 
-  /**
-   * Garante a arte inteira na pasta da campanha. Campanhas publicadas antes
-   * da exportação em imagem única geram e enviam na hora, uma vez só.
-   */
-  async function ensureFull(): Promise<Project> {
-    if (project.fullImage) return project;
-    setPreparing(true);
-    try {
-      flash('Gerando a arte inteira desta campanha (só na primeira vez)…');
-      const file = await getOriginal(project.slug, project.source.filename);
-      const image = await loadImage(file);
-      const full = await renderFull(image, project);
-      const updated = await uploadFull(project.slug, full.filename, full.blob);
-      setProject(updated);
-      return updated;
-    } finally {
-      setPreparing(false);
-    }
+  function myHonda(): string {
+    return generateMyHondaFragment(project, `${result.cdnBaseUrl}/c/${project.slug}`);
   }
 
-  /**
-   * Imagem única com mapa de links, no molde exato de uma campanha aprovada
-   * no myHonda. O texto vai para a área de transferência só depois de a arte
-   * inteira existir, por isso pode demorar um instante na primeira vez.
-   */
+  /** Arquivo .txt com o conteúdo para a plataforma myHonda, no formato de uma campanha aprovada. */
+  function downloadMyHondaTxt() {
+    saveBlob(new Blob([myHonda()], { type: 'text/plain;charset=utf-8' }), `${project.slug}-myhonda.txt`);
+    flash('Arquivo .txt para myHonda gerado: tabela de fatias, rodapé obrigatório e contador de abertura.');
+  }
+
+  /** O mesmo conteúdo do .txt, na área de transferência. */
   async function copyMyHonda() {
-    try {
-      const p = await ensureFull();
-      const frag = generateMyHondaImageMap(p, `${result.cdnBaseUrl}/c/${p.slug}`, p.fullImage!);
-      await navigator.clipboard.writeText(frag);
-      flash('HTML para myHonda copiado: imagem única com mapa de links, rodapé e contador de abertura.');
-    } catch (err) {
-      flash((err as Error).message);
-    }
-  }
-
-  /** Mesmo conteúdo do copiar, como arquivo .txt para anexar ou enviar à plataforma. */
-  async function downloadMyHondaTxt() {
-    try {
-      const p = await ensureFull();
-      const frag = generateMyHondaImageMap(p, `${result.cdnBaseUrl}/c/${p.slug}`, p.fullImage!);
-      saveBlob(new Blob([frag], { type: 'text/plain;charset=utf-8' }), `${p.slug}-myhonda.txt`);
-      flash('Arquivo .txt para myHonda gerado: imagem única com mapa de links, rodapé e contador de abertura.');
-    } catch (err) {
-      flash((err as Error).message);
-    }
-  }
-
-  /** Versão anterior: tabela de fatias, para comparação caso a plataforma recuse a imagem única. */
-  async function copyMyHondaSliced() {
-    const frag = generateMyHondaFragment(project, `${result.cdnBaseUrl}/c/${project.slug}`);
-    await navigator.clipboard.writeText(frag);
-    flash('HTML fatiado para myHonda copiado (versão em tabela).');
+    await navigator.clipboard.writeText(myHonda());
+    flash('HTML para myHonda copiado: tabela de fatias, rodapé obrigatório e contador de abertura.');
   }
 
   async function copyHtml() {
@@ -147,18 +105,12 @@ export function Published({ project: initial, result, html, onNew }: Props) {
         </div>
 
         <div class="card space-y-2">
-          <button class="btn-primary w-full justify-center" onClick={downloadMyHondaTxt} disabled={preparing}>
-            {preparing ? 'Preparando…' : 'Baixar .txt para myHonda'}
-          </button>
+          <button class="btn-primary w-full justify-center" onClick={downloadMyHondaTxt}>Baixar .txt para myHonda</button>
           <p class="text-xs text-ink-3">
-            Imagem única com mapa de links, no molde exato de uma campanha aprovada: rodapé obrigatório e contador de abertura incluídos.
+            No formato de uma campanha aprovada na plataforma: só o conteúdo, com rodapé obrigatório e contador de abertura.
           </p>
-          <button class="btn-secondary w-full justify-center" onClick={copyMyHonda} disabled={preparing}>
-            Copiar para myHonda
-          </button>
+          <button class="btn-secondary w-full justify-center" onClick={copyMyHonda}>Copiar para myHonda</button>
           <p class="text-xs text-ink-3">O mesmo conteúdo do .txt, direto na área de transferência.</p>
-          <button class="btn-secondary w-full justify-center" onClick={copyMyHondaSliced}>Copiar para myHonda (fatiado)</button>
-          <p class="text-xs text-ink-3">Versão anterior, em tabela de fatias. Use só se a imagem única for recusada.</p>
           <button class="btn-secondary w-full justify-center" onClick={copyHtml}>Copiar HTML completo</button>
           <p class="text-xs text-ink-3">Documento inteiro, para outras plataformas de disparo.</p>
           <button class="btn-secondary w-full justify-center" onClick={copyRich}>Copiar como email (Gmail)</button>

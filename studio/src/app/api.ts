@@ -39,16 +39,6 @@ export async function getSlice(slug: string, filename: string): Promise<Uint8Arr
   return new Uint8Array(await res.arrayBuffer());
 }
 
-/**
- * Envia a arte inteira de uma campanha já publicada que ainda não tinha
- * (campanhas anteriores à exportação em imagem única). Devolve o projeto atualizado.
- */
-export async function uploadFull(slug: string, filename: string, blob: Blob): Promise<Project> {
-  const form = new FormData();
-  form.append('full', blob, filename);
-  return fetch(`/api/campaigns/${slug}/full`, { method: 'POST', body: form }).then((r) => json<Project>(r));
-}
-
 export function setStatus(slug: string, status: CampaignStatus) {
   return fetch(`/api/campaigns/${slug}/status`, {
     method: 'POST',
@@ -67,14 +57,12 @@ export function publish(
   html: string,
   original: File,
   slices: Map<string, Blob>,
-  full: { filename: string; blob: Blob },
   onProgress?: (fraction: number) => void,
 ): Promise<PublishResult> {
   const form = new FormData();
   form.append('project', JSON.stringify(project));
   form.append('html', html);
   form.append('original', original, original.name);
-  form.append('full', full.blob, full.filename);
   for (const [name, blob] of slices) form.append('slice', blob, name);
 
   return new Promise((resolve, reject) => {

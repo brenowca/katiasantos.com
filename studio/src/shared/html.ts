@@ -16,30 +16,47 @@ export function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
-/** Para texto entre tags: aspas ficam literais, como na campanha aprovada. */
-export function escapeText(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
 export function escapeAttr(s: string): string {
   return escapeHtml(s).replace(/'/g, '&#39;');
 }
 
 const FOOTER_TD_STYLE =
-  'text-align:center;font-style:normal;font-weight:300;font-size:11px;line-height:16px;color:#000000;font-family:Gotham,Helvetica Neue,Helvetica,Arial,sans-serif;';
+  "text-align:center;font-style:normal;font-weight:300;font-size:11px;line-height:16px;color:#000000;font-family:Gotham,'Helvetica Neue',Helvetica,Arial,sans-serif;";
+
+const URL_RE = /https?:\/\/[^\s"'<>]*[^\s"'<>.,;:!?)]/g;
+
+/** Para texto entre tags: aspas ficam literais. */
+function escapeText(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/** Texto do rodapé com endereços http(s) virando links clicáveis, exibidos sem o esquema. */
+export function footerLine(text: string): string {
+  let out = '';
+  let last = 0;
+  for (const m of text.matchAll(URL_RE)) {
+    out += escapeText(text.slice(last, m.index));
+    const url = m[0];
+    out += `<a href="${escapeAttr(url)}" target="_blank" style="color:#000000;text-decoration:underline;">${escapeHtml(url.replace(/^https?:\/\//, ''))}</a>`;
+    last = m.index + url.length;
+  }
+  return out + escapeText(text.slice(last));
+}
 
 /** Tabela de rodapé com um parágrafo por linha. Vazio = sem rodapé. */
 export function footerTable(lines: readonly string[] | undefined, width: number): string {
   const rows = (lines ?? []).map((t) => t.trim()).filter(Boolean);
   if (!rows.length) return '';
-  const trs = rows.map((t) => `<tr><td bgcolor="#f8f5f5" style="${FOOTER_TD_STYLE}">${escapeHtml(t)}</td></tr>`).join('\n');
-  return `<table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="5" bgcolor="#f8f5f5" align="center" style="width:100%;max-width:${width}px;margin:0 auto;background-color:#f8f5f5;">\n${trs}\n</table>`;
+  const trs = rows.map((t) => `<tr><td bgcolor="#f8f5f5" style="${FOOTER_TD_STYLE}">${footerLine(t)}</td></tr>`).join('\n');
+  return `<table role="presentation" width="${width}" border="0" cellpadding="0" cellspacing="5" bgcolor="#f8f5f5" align="center" style="width:100%;max-width:${width}px;margin:0 auto;background-color:#f8f5f5;">\n${trs}\n</table>`;
 }
 
 const IMG_STYLE = 'display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;';
 
+/** Imagem com dimensões explícitas; sem o atributo alt quando o texto está vazio. */
 function img(src: string, w: number, h: number, alt: string): string {
-  return `<img src="${escapeAttr(src)}" width="${w}" height="${h}" alt="${escapeAttr(alt)}" style="${IMG_STYLE}width:100%;max-width:${w}px;height:auto;" />`;
+  const altAttr = alt.trim() ? ` alt="${escapeAttr(alt.trim())}"` : '';
+  return `<img src="${escapeAttr(src)}" width="${w}" height="${h}"${altAttr} style="${IMG_STYLE}width:100%;max-width:${w}px;height:auto;" />`;
 }
 
 function linked(href: string, inner: string): string {
@@ -47,12 +64,24 @@ function linked(href: string, inner: string): string {
   return `<a href="${escapeAttr(href.trim())}" target="_blank" style="display:block;text-decoration:none;">${inner}</a>`;
 }
 
+/** Largura de coluna em porcentagem da tabela, com até duas casas (465/600 → "77.5"). */
+function percent(w: number, total: number): string {
+  return String(Math.round((w / total) * 10000) / 100);
+}
+
+interface BodyOptions {
+  /** Comentários condicionais do Outlook (ghost table) e cor de fundo na tabela externa. */
+  outlook: boolean;
+  /** Tag de rastreamento de abertura da plataforma myHonda. */
+  myHonda: boolean;
+}
+
 /**
- * Gera o HTML do email fatiado.
- * @param project  projeto com linhas, colunas e links
- * @param folderUrl URL pública da pasta da campanha, sem barra final (ex.: https://cdn.katiasantos.com/c/2026-10-civic)
+ * Corpo do email no formato aprovado na plataforma myHonda: tabela externa de
+ * 100% com célula centralizada, tabela de 600px com as fatias (colunas em
+ * porcentagem), linha vazia de 16px e rodapé.
  */
-export function generateEmailHtml(project: Project, folderUrl: string): EmailHtml {
+function emailBody(project: Project, folderUrl: string, opts: BodyOptions): string {
   const W = project.displayWidth;
   const base = folderUrl.replace(/\/+$/, '');
   const refs = slices(project);
@@ -71,29 +100,46 @@ export function generateEmailHtml(project: Project, folderUrl: string): EmailHtm
         .map((cell, i) => {
           const ref = byCell.get(cell.id)!;
           const w = widths[i]!;
-          return `<td width="${w}" valign="top" style="padding:0;width:${w}px;">${linked(cell.href, img(`${base}/${ref.filename}`, w, h, cell.alt))}</td>`;
+          const pct = percent(w, W);
+          return `<td width="${pct}%" valign="top" style="padding:0;width:${pct}%;">${linked(cell.href, img(`${base}/${ref.filename}`, w, h, cell.alt))}</td>`;
         })
         .join('');
-      return `<tr><td style="padding:0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>${tds}</tr></table></td></tr>`;
+      return `<tr><td style="padding:0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;"><tr>${tds}</tr></table></td></tr>`;
     })
     .join('\n');
 
+  const footer = footerTable(project.footerLines, W);
+  const spacer = footer ? `<tr><td height="16" style="padding:0;height:16px;line-height:16px;font-size:16px;">&nbsp;</td></tr>` : '';
   const bg = project.backgroundColor || '#ffffff';
+  const outerBg = opts.outlook ? ` bgcolor="${escapeAttr(bg)}"` : '';
+  const outerStyle = opts.outlook ? `border-collapse:collapse;width:100%;background-color:${escapeAttr(bg)};` : 'border-collapse:collapse;width:100%;';
 
-  const fragment = [
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${escapeAttr(bg)}" style="border-collapse:collapse;background-color:${escapeAttr(bg)};">`,
+  return [
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"${outerBg} style="${outerStyle}">`,
     `<tr><td align="center" style="padding:0;">`,
-    `<!--[if mso]><table role="presentation" width="${W}" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->`,
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;width:100%;max-width:${W}px;margin:0 auto;">`,
+    opts.outlook ? `<!--[if mso]><table role="presentation" width="${W}" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->` : '',
+    `<table role="presentation" width="${W}" cellpadding="0" cellspacing="0" border="0" align="center" style="border-collapse:collapse;width:100%;max-width:${W}px;margin:0 auto;">`,
     rowsHtml,
+    spacer,
     `</table>`,
-    footerTable(project.footerLines, W),
-    `<!--[if mso]></td></tr></table><![endif]-->`,
+    footer,
+    opts.myHonda ? `<custom name="opencounter" type="tracking" />` : '',
+    opts.outlook ? `<!--[if mso]></td></tr></table><![endif]-->` : '',
     `</td></tr>`,
     `</table>`,
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+/**
+ * Gera o HTML do email fatiado.
+ * @param project  projeto com linhas, colunas e links
+ * @param folderUrl URL pública da pasta da campanha, sem barra final (ex.: https://cdn.katiasantos.com/c/2026-10-civic)
+ */
+export function generateEmailHtml(project: Project, folderUrl: string): EmailHtml {
+  const fragment = emailBody(project, folderUrl, { outlook: true, myHonda: false });
+  const bg = project.backgroundColor || '#ffffff';
 
   const preheader = project.preheader.trim()
     ? `<div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">${escapeHtml(project.preheader.trim())}</div>\n`
@@ -122,6 +168,17 @@ ${preheader}${fragment}
 `;
 
   return { document, fragment };
+}
+
+/**
+ * Fragmento para colar na plataforma myHonda, no formato de uma campanha
+ * aprovada: o mesmo corpo do email, sem doctype, head, body, style nem
+ * comentários condicionais do Outlook, com o rodapé obrigatório e a tag de
+ * rastreamento de abertura. Campanhas antigas sem rodapé gravado recebem o padrão.
+ */
+export function generateMyHondaFragment(project: Project, folderUrl: string): string {
+  const withFooter = project.footerLines ? project : { ...project, footerLines: [...DEFAULT_FOOTER_LINES] };
+  return emailBody(withFooter, folderUrl, { outlook: false, myHonda: true });
 }
 
 export const LIMITS = {
@@ -172,114 +229,4 @@ export function checkLimits(project: Project, html: string, sliceSizes: Map<stri
     out.push({ level: 'warn', message: `${empty.length} fatia(s) sem texto alternativo. Quem abre com imagens bloqueadas não verá nada.` });
   }
   return out;
-}
-
-
-/**
- * Fragmento para colar no editor da plataforma myHonda, no mesmo molde de uma
- * campanha aprovada: só uma div com o conteúdo, sem doctype, head, body, style
- * nem comentários condicionais. Inclui o rodapé obrigatório e a tag de
- * rastreamento de abertura da plataforma.
- */
-export function generateMyHondaFragment(project: Project, folderUrl: string): string {
-  const W = project.displayWidth;
-  const base = folderUrl.replace(/\/+$/, '');
-  const refs = slices(project);
-  const byCell = new Map(refs.map((r) => [r.cellId, r]));
-
-  const rows = project.rows
-    .map((row) => {
-      const h = displayHeight(row, project.source.width, W);
-      if (row.cells.length === 1) {
-        const cell = row.cells[0]!;
-        const ref = byCell.get(cell.id)!;
-        return `<tr><td style="padding:0;">${linked(cell.href, img(`${base}/${ref.filename}`, W, h, cell.alt))}</td></tr>`;
-      }
-      const widths = displayColumns(row, project.source.width, W);
-      const tds = row.cells
-        .map((cell, i) => {
-          const ref = byCell.get(cell.id)!;
-          const w = widths[i]!;
-          return `<td width="${w}" valign="top" style="padding:0;width:${w}px;">${linked(cell.href, img(`${base}/${ref.filename}`, w, h, cell.alt))}</td>`;
-        })
-        .join('');
-      return `<tr><td style="padding:0;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;"><tr>${tds}</tr></table></td></tr>`;
-    })
-    .join('\n');
-
-  const footer = footerTable(project.footerLines ?? DEFAULT_FOOTER_LINES, W);
-
-  return [
-    `<div style="width:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;">`,
-    `<table width="${W}" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:${W}px;max-width:${W}px;">`,
-    rows,
-    `</table>`,
-    footer ? `<br />` : '',
-    footer,
-    `<custom name="opencounter" type="tracking" />`,
-    `</div>`,
-  ]
-    .filter(Boolean)
-    .join('\n');
-}
-
-/** Rodapé no molde exato da campanha aprovada (tabela de largura fixa, alinhada à esquerda). */
-function myHondaFooterTable(lines: readonly string[] | undefined, width: number): string {
-  const rows = (lines ?? []).map((t) => t.trim()).filter(Boolean);
-  if (!rows.length) return '';
-  const style =
-    'text-align: center; font-style: normal; font-weight: 300; font-size: 11px; color: #000000; font-family: Gotham, Helvetica Neue, Helvetica, Arial, sans-serif;';
-  const trs = rows.map((t) => `        <tr>\n            <td bgcolor="f8f5f5" style="${style}">\n                ${escapeText(t)}\n            </td>\n        </tr>`).join('\n');
-  return `    <table width="${width}px" border="0" align="Left" cellpadding="0" cellspacing="5" bgcolor="#f8f5f5">\n${trs}\n    </table>`;
-}
-
-/**
- * Fragmento para o myHonda com UMA imagem (a arte inteira na largura de
- * exibição) e um mapa de links (<map>/<area>), no molde exato de uma campanha
- * aprovada de outra agência. Cada célula com link vira um retângulo clicável
- * em pixels de exibição; células sem link não geram área.
- * @param fullFilename nome da arte inteira na pasta (ex.: full.jpg)
- */
-export function generateMyHondaImageMap(project: Project, folderUrl: string, fullFilename: string): string {
-  const W = project.displayWidth;
-  const base = folderUrl.replace(/\/+$/, '');
-  const scale = W / project.source.width;
-  const px = (v: number) => Math.round(v * scale);
-
-  const areas: string[] = [];
-  for (const row of project.rows) {
-    const y1 = px(row.y);
-    const y2 = px(row.y + row.height);
-    for (const cell of row.cells) {
-      const href = cell.href.trim();
-      if (!href) continue;
-      const x1 = px(cell.x);
-      const x2 = px(cell.x + cell.width);
-      const alt = escapeAttr(cell.alt.trim());
-      areas.push(
-        `    <area target="" alt="${alt}" title="${alt}" href="${escapeAttr(href)}" coords="${x1},${y1},${x2},${y2}" shape="rect">`,
-      );
-    }
-  }
-
-  const stamp = project.publishedAt ? Math.floor(new Date(project.publishedAt).getTime() / 1000) : Math.floor(Date.now() / 1000);
-  const src = `${base}/${fullFilename}?_t=${stamp}`;
-  const footer = myHondaFooterTable(project.footerLines ?? DEFAULT_FOOTER_LINES, W);
-
-  return [
-    `<div style="width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column">`,
-    ``,
-    `<img src="${escapeAttr(src)}" alt="${escapeAttr(project.name)}" usemap="#image-map">`,
-    ``,
-    `<map name="image-map">`,
-    ...areas,
-    `</map>`,
-    `    <br />`,
-    ``,
-    footer,
-    `    <custom name="opencounter" type="tracking" />`,
-    `</div>`,
-  ]
-    .filter((l) => l !== null)
-    .join('\n');
 }

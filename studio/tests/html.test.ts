@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { splitCell, splitRow, updateCell } from '../src/shared/geometry';
-import { checkLimits, generateEmailHtml, generateMyHondaFragment, generateMyHondaImageMap } from '../src/shared/html';
-import { fullImageFilename, newProject } from '../src/shared/model';
+import { checkLimits, footerLine, generateEmailHtml, generateMyHondaFragment } from '../src/shared/html';
+import { newProject } from '../src/shared/model';
 
 function sample() {
   let p = newProject('Civic & Cia', '2026-10-civic', { width: 1200, height: 900, filename: 'a.png' });
@@ -26,7 +26,8 @@ describe('generateEmailHtml', () => {
   it('envolve com link só quando há href', () => {
     expect(fragment).toContain('<a href="https://honda.com.br/civic?utm=1" target="_blank"');
     expect(fragment).toContain('<a href="https://wa.me/55"');
-    expect(fragment.match(/<a /g)).toHaveLength(2);
+    // Duas imagens com link; o terceiro <a> é o endereço do myHonda no rodapé.
+    expect(fragment.match(/<a [^>]*style="display:block/g)).toHaveLength(2);
   });
   it('escapa texto', () => {
     expect(document).toContain('<title>Civic &amp; Cia</title>');
@@ -40,8 +41,9 @@ describe('generateEmailHtml', () => {
     const legado = { ...sample(), footerLines: undefined };
     expect(generateEmailHtml(legado, 'https://x').document).not.toContain('Desacelere');
   });
-  it('tem tabela aninhada para colunas e ghost table do Outlook', () => {
-    expect(fragment).toContain('<td width="300"');
+  it('tem tabela aninhada com colunas em porcentagem e ghost table do Outlook', () => {
+    expect(fragment).toContain('<td width="50%" valign="top" style="padding:0;width:50%;">');
+    expect(fragment).toContain('<tr><td height="16" style="padding:0;height:16px;line-height:16px;font-size:16px;">&nbsp;</td></tr>');
     expect(fragment).toContain('<!--[if mso]><table role="presentation" width="600"');
     expect(document.startsWith('<!DOCTYPE html PUBLIC')).toBe(true);
   });
@@ -75,12 +77,21 @@ describe('pacote com caminhos relativos', () => {
 describe('generateMyHondaFragment', () => {
   const frag = generateMyHondaFragment(sample(), 'https://cdn.mktassets.com/c/2026-10-civic');
   it('é só um fragmento, sem documento', () => {
-    expect(frag.startsWith('<div ')).toBe(true);
+    expect(frag.startsWith('<table ')).toBe(true);
     expect(frag).not.toMatch(/<!DOCTYPE|<html|<head|<body|<style|\[if mso\]/);
   });
   it('campanha antiga sem campo recebe o rodapé padrão no fragmento', () => {
     const legado = { ...sample(), footerLines: undefined };
     expect(generateMyHondaFragment(legado, 'https://x')).toContain('Desacelere');
+  });
+  it('omite o alt quando vazio e usa a tabela externa centralizada', () => {
+    const p = sample();
+    p.rows[0]!.cells[0]!.alt = '  ';
+    const f = generateMyHondaFragment(p, 'https://x');
+    expect(f).toContain('<img src="https://x/01.jpg" width="600" height="300" style=');
+    expect(f).toContain('alt="WhatsApp"');
+    expect(f.startsWith('<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;">\n<tr><td align="center" style="padding:0;">')).toBe(true);
+    expect(f).not.toContain('bgcolor="#ffffff"');
   });
   it('tem as imagens, o rodapé obrigatório e a tag de rastreamento', () => {
     expect(frag.match(/<img /g)).toHaveLength(3);
@@ -89,33 +100,21 @@ describe('generateMyHondaFragment', () => {
     expect(frag).toContain('solicite o descadastramento');
     expect(frag).toContain('<custom name="opencounter" type="tracking" />');
   });
+  it('rodapé padrão sem aspas, com o endereço do myHonda como link', () => {
+    expect(frag).not.toContain('&quot;');
+    expect(frag).toContain(
+      'acesse <a href="https://www.honda.com.br/myHonda" target="_blank" style="color:#000000;text-decoration:underline;">www.honda.com.br/myHonda</a>, faça seu login',
+    );
+  });
 });
 
-describe('generateMyHondaImageMap', () => {
-  const p = { ...sample(), publishedAt: '2026-10-15T12:00:00.000Z' };
-  const frag = generateMyHondaImageMap(p, 'https://cdn.mktassets.com/c/2026-10-civic/', 'full.jpg');
-  it('tem uma única imagem com usemap e o mapa', () => {
-    expect(frag.match(/<img /g)).toHaveLength(1);
-    expect(frag).toContain('src="https://cdn.mktassets.com/c/2026-10-civic/full.jpg?_t=1792065600" alt="Civic &amp; Cia" usemap="#image-map"');
-    expect(frag).toContain('<map name="image-map">');
+describe('footerLine', () => {
+  it('transforma endereços em links sem levar a pontuação final', () => {
+    expect(footerLine('Veja http://a.com/x. Ou https://b.com/y?z=1, ok & fim')).toBe(
+      'Veja <a href="http://a.com/x" target="_blank" style="color:#000000;text-decoration:underline;">a.com/x</a>. Ou <a href="https://b.com/y?z=1" target="_blank" style="color:#000000;text-decoration:underline;">b.com/y?z=1</a>, ok &amp; fim',
+    );
   });
-  it('gera uma área por célula com link, em pixels de exibição', () => {
-    expect(frag.match(/<area /g)).toHaveLength(2);
-    expect(frag).toContain('href="https://honda.com.br/civic?utm=1" coords="0,0,600,300" shape="rect"');
-    expect(frag).toContain('alt="WhatsApp" title="WhatsApp" href="https://wa.me/55" coords="0,300,300,450" shape="rect"');
-  });
-  it('é só um fragmento, com rodapé e rastreamento', () => {
-    expect(frag.startsWith('<div ')).toBe(true);
-    expect(frag).not.toMatch(/<!DOCTYPE|<html|<head|<body|<style|<table[^>]*role=/);
-    expect(frag).toContain('width="600px" border="0" align="Left"');
-    expect(frag).toContain('Desacelere, seu bem maior é a vida.');
-    expect(frag).toContain('"Caso prefira não receber');
-    expect(frag).toContain('<custom name="opencounter" type="tracking" />');
-  });
-  it('escolhe PNG só quando todas as fatias são PNG', () => {
-    expect(fullImageFilename(sample())).toBe('full.jpg');
-    const png = newProject('x', 'x', { width: 600, height: 100, filename: 'a.png' });
-    png.rows[0]!.cells[0]!.format = 'png';
-    expect(fullImageFilename(png)).toBe('full.png');
+  it('escapa texto sem endereço e mantém aspas literais', () => {
+    expect(footerLine('a <b> & "c"')).toBe('a &lt;b&gt; &amp; "c"');
   });
 });

@@ -14,7 +14,6 @@ type App = { Bindings: Env; Variables: { user: AccessUser } };
 
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 const PREFIX = 'c/';
-const FULL_NAME = /^full\.(jpg|png)$/;
 
 function imageType(name: string): string {
   return name.endsWith('.png') ? 'image/png' : 'image/jpeg';
@@ -94,34 +93,6 @@ app.get('/api/campaigns/:slug/slice/:filename', async (c) => {
   return new Response(obj.body, { headers });
 });
 
-/**
- * Grava a arte inteira (full.jpg/full.png) de uma campanha publicada antes da
- * exportação em imagem única. Só adiciona: se já existe, não sobrescreve.
- * Devolve o project.json atualizado.
- */
-app.post('/api/campaigns/:slug/full', async (c) => {
-  const slug = c.req.param('slug');
-  if (!isValidSlug(slug)) return c.json({ error: 'Slug inválido.' }, 400);
-  const folder = `${PREFIX}${slug}/`;
-  const obj = await c.env.BUCKET.get(`${folder}project.json`);
-  if (!obj) return c.json({ error: 'Campanha não encontrada.' }, 404);
-  const project = (await obj.json()) as Project;
-  if (!project.cdnBaseUrl) project.cdnBaseUrl = c.env.LEGACY_CDN_BASE_URL;
-  if (project.fullImage && (await c.env.BUCKET.head(`${folder}${project.fullImage}`))) return c.json(project);
-
-  const form = await c.req.formData();
-  const full = form.get('full');
-  if (!(full instanceof File) || !FULL_NAME.test(full.name)) return c.json({ error: 'Arte inteira inválida.' }, 400);
-  await c.env.BUCKET.put(`${folder}${full.name}`, full.stream(), {
-    httpMetadata: { contentType: full.type || imageType(full.name), cacheControl: IMMUTABLE },
-  });
-  project.fullImage = full.name;
-  await c.env.BUCKET.put(`${folder}project.json`, JSON.stringify(project, null, 2), {
-    httpMetadata: { contentType: 'application/json', cacheControl: 'no-store' },
-  });
-  return c.json(project);
-});
-
 const STATUSES: CampaignStatus[] = ['active', 'approved', 'archived'];
 
 /**
@@ -159,7 +130,6 @@ app.get('/api/campaigns/:slug/exists', async (c) => {
  *  - project: JSON do projeto
  *  - html: documento HTML final
  *  - original: arte completa (imagem)
- *  - full: arte inteira na largura de exibição (full.jpg ou full.png)
  *  - slice: um campo por fatia; o nome do arquivo vem do File.name
  * A pasta é imutável: slug já existente é recusado com 409.
  */
@@ -176,13 +146,11 @@ app.post('/api/campaigns/:slug/publish', async (c) => {
   const projectRaw = form.get('project');
   const html = form.get('html');
   const original = form.get('original');
-  const full = form.get('full');
   const slices = form.getAll('slice').filter((f): f is File => f instanceof File);
 
-  if (typeof projectRaw !== 'string' || typeof html !== 'string' || !(original instanceof File) || !(full instanceof File)) {
+  if (typeof projectRaw !== 'string' || typeof html !== 'string' || !(original instanceof File)) {
     return c.json({ error: 'Formulário incompleto.' }, 400);
   }
-  if (!FULL_NAME.test(full.name)) return c.json({ error: `Nome da arte inteira inválido: ${full.name}` }, 400);
   let project: Project;
   try {
     project = JSON.parse(projectRaw) as Project;
@@ -199,7 +167,6 @@ app.post('/api/campaigns/:slug/publish', async (c) => {
   project.publishedBy = c.get('user').email;
   project.publishedAt = new Date().toISOString();
   project.cdnBaseUrl = cdnBaseUrl;
-  project.fullImage = full.name;
 
   // Grava as fatias primeiro; project.json por último, pois é ele que marca a campanha como existente.
   await Promise.all(
@@ -209,9 +176,6 @@ app.post('/api/campaigns/:slug/publish', async (c) => {
       }),
     ),
   );
-  await c.env.BUCKET.put(`${folder}${full.name}`, full.stream(), {
-    httpMetadata: { contentType: full.type || imageType(full.name), cacheControl: IMMUTABLE },
-  });
   await c.env.BUCKET.put(`${folder}original`, original.stream(), {
     httpMetadata: { contentType: original.type || 'application/octet-stream', cacheControl: IMMUTABLE },
     customMetadata: { filename: original.name },
