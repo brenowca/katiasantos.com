@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { splitCell, splitRow, updateCell } from '../src/shared/geometry';
-import { checkLimits, footerLine, generateEmailHtml, generateMyHondaFragment } from '../src/shared/html';
-import { newProject } from '../src/shared/model';
+import { checkLimits, footerLine, generateEmailHtml, generateMyHondaFragment, generateMyHondaImageMap } from '../src/shared/html';
+import { fullImageFilename, newProject } from '../src/shared/model';
 
 function sample() {
   let p = newProject('Civic & Cia', '2026-10-civic', { width: 1200, height: 900, filename: 'a.png' });
@@ -105,6 +105,37 @@ describe('generateMyHondaFragment', () => {
     expect(frag).toContain(
       'acesse <a href="https://www.honda.com.br/myHonda" target="_blank" style="color:#000000;text-decoration:underline;">www.honda.com.br/myHonda</a>, faça seu login',
     );
+  });
+});
+
+describe('generateMyHondaImageMap', () => {
+  const p = { ...sample(), publishedAt: '2026-10-15T12:00:00.000Z' };
+  const frag = generateMyHondaImageMap(p, 'https://cdn.mktassets.com/c/2026-10-civic/', 'full.jpg');
+  it('tem uma única imagem com usemap, sem parâmetro na URL, e o mapa', () => {
+    expect(frag.match(/<img /g)).toHaveLength(1);
+    expect(frag).toContain('<img src="https://cdn.mktassets.com/c/2026-10-civic/full.jpg" alt="Civic &amp; Cia" usemap="#image-map">');
+    expect(frag).not.toContain('?_t=');
+    expect(frag).toContain('<map name="image-map">');
+  });
+  it('gera uma área por célula com link, em pixels de exibição, com target vazio', () => {
+    expect(frag.match(/<area /g)).toHaveLength(2);
+    expect(frag).toContain('<area target="" alt="');
+    expect(frag).toContain('href="https://honda.com.br/civic?utm=1" coords="0,0,600,300" shape="rect"');
+    expect(frag).toContain('alt="WhatsApp" title="WhatsApp" href="https://wa.me/55" coords="0,300,300,450" shape="rect"');
+  });
+  it('é só um fragmento, com rodapé e rastreamento', () => {
+    expect(frag.startsWith('<div ')).toBe(true);
+    expect(frag).not.toMatch(/<!DOCTYPE|<html|<head|<body|<style|<table[^>]*role=/);
+    expect(frag).toContain('width="600px" border="0" align="Left"');
+    expect(frag).toContain('Desacelere, seu bem maior é a vida.');
+    expect(frag).toContain('<a href="https://www.honda.com.br/myHonda" target="_blank"');
+    expect(frag).toContain('<custom name="opencounter" type="tracking" />');
+  });
+  it('escolhe PNG só quando todas as fatias são PNG', () => {
+    expect(fullImageFilename(sample())).toBe('full.jpg');
+    const png = newProject('x', 'x', { width: 600, height: 100, filename: 'a.png' });
+    png.rows[0]!.cells[0]!.format = 'png';
+    expect(fullImageFilename(png)).toBe('full.png');
   });
 });
 

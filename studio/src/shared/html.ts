@@ -181,6 +181,64 @@ export function generateMyHondaFragment(project: Project, folderUrl: string): st
   return emailBody(withFooter, folderUrl, { outlook: false, myHonda: true });
 }
 
+/** Rodapé no molde exato da campanha aprovada (tabela de largura fixa, alinhada à esquerda). */
+function myHondaFooterTable(lines: readonly string[] | undefined, width: number): string {
+  const rows = (lines ?? []).map((t) => t.trim()).filter(Boolean);
+  if (!rows.length) return '';
+  const style =
+    'text-align: center; font-style: normal; font-weight: 300; font-size: 11px; color: #000000; font-family: Gotham, Helvetica Neue, Helvetica, Arial, sans-serif;';
+  const trs = rows.map((t) => `        <tr>\n            <td bgcolor="f8f5f5" style="${style}">\n                ${footerLine(t)}\n            </td>\n        </tr>`).join('\n');
+  return `    <table width="${width}px" border="0" align="Left" cellpadding="0" cellspacing="5" bgcolor="#f8f5f5">\n${trs}\n    </table>`;
+}
+
+/**
+ * Fragmento para o myHonda com UMA imagem (a arte inteira na largura de
+ * exibição) e um mapa de links (<map>/<area>), no molde de uma campanha
+ * aprovada de outra agência. Cada célula com link vira um retângulo clicável
+ * em pixels de exibição; células sem link não geram área. A URL da imagem vai
+ * sem parâmetros: a pasta é imutável, não há cache para furar.
+ * @param fullFilename nome da arte inteira na pasta (ex.: full.jpg)
+ */
+export function generateMyHondaImageMap(project: Project, folderUrl: string, fullFilename: string): string {
+  const W = project.displayWidth;
+  const base = folderUrl.replace(/\/+$/, '');
+  const scale = W / project.source.width;
+  const px = (v: number) => Math.round(v * scale);
+
+  const areas: string[] = [];
+  for (const row of project.rows) {
+    const y1 = px(row.y);
+    const y2 = px(row.y + row.height);
+    for (const cell of row.cells) {
+      const href = cell.href.trim();
+      if (!href) continue;
+      const x1 = px(cell.x);
+      const x2 = px(cell.x + cell.width);
+      const alt = escapeAttr(cell.alt.trim());
+      areas.push(
+        `    <area target="" alt="${alt}" title="${alt}" href="${escapeAttr(href)}" coords="${x1},${y1},${x2},${y2}" shape="rect">`,
+      );
+    }
+  }
+
+  const footer = myHondaFooterTable(project.footerLines ?? DEFAULT_FOOTER_LINES, W);
+
+  return [
+    `<div style="width: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column">`,
+    ``,
+    `<img src="${escapeAttr(`${base}/${fullFilename}`)}" alt="${escapeAttr(project.name)}" usemap="#image-map">`,
+    ``,
+    `<map name="image-map">`,
+    ...areas,
+    `</map>`,
+    `    <br />`,
+    ``,
+    footer,
+    `    <custom name="opencounter" type="tracking" />`,
+    `</div>`,
+  ].join('\n');
+}
+
 export const LIMITS = {
   /** Gmail corta emails com HTML maior que ~102 KB. */
   htmlBytes: 102 * 1024,

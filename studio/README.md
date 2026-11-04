@@ -36,13 +36,14 @@ respeita essa base. Para trocar o padrão, mude `CDN_BASE_URL` em `wrangler.json
    - **Pré-visualizar** mostra o email montado e os avisos (peso, altura, alt vazio).
 4. **Publicar** recorta as fatias no navegador, envia tudo para o CDN e mostra:
    - **Baixar .txt para myHonda** (botão principal) e **Copiar para myHonda**, com o
-     mesmo conteúdo, no formato de uma campanha aprovada na plataforma: só o corpo
-     do email (tabela externa de 100% com célula centralizada, tabela de 600px com
-     as fatias e colunas em porcentagem, linha vazia de 16px, rodapé obrigatório com
-     o endereço do myHonda como link) mais a tag `<custom name="opencounter">`. Sem
-     doctype, head, style nem comentários condicionais do Outlook.
-   - Imagens com texto alternativo vazio saem sem o atributo `alt`. Preencha no
-     painel da célula; a pré-visualização avisa quando falta.
+     mesmo conteúdo: imagem única (a arte inteira em `full.jpg`, URL sem parâmetros)
+     com um mapa de links (`<map>`/`<area>`, um retângulo por célula com link), no
+     molde de uma campanha aprovada na plataforma: div + img + map + rodapé
+     obrigatório + tag `<custom name="opencounter">`. Campanhas publicadas sem a
+     arte inteira geram o arquivo na primeira vez que o botão é usado.
+   - **Copiar para myHonda (fatiado)**: a versão em tabela de fatias (tabela externa
+     de 100%, tabela de 600px com colunas em porcentagem, rodapé), caso a imagem
+     única seja recusada. Imagens com texto alternativo vazio saem sem `alt`.
    - **Copiar HTML completo**: documento inteiro, para outras plataformas de disparo.
    - **Copiar como email (Gmail)**: cole direto na janela de nova mensagem.
    - **Baixar .html** e **Abrir prévia** (link público para aprovação).
@@ -64,7 +65,8 @@ c/<slug>/
   01.jpg  02-a.png  02-b.png  ...   fatias (cache de 1 ano, imutáveis)
   index.html                        prévia pública = HTML entregue
   original                          arte completa (usada no "Duplicar")
-  project.json                      cortes, links, alts
+  full.jpg (ou full.png)            arte inteira na largura de exibição (myHonda)
+  project.json                      cortes, links, alts, fullImage
 ```
 
 ## Desenvolvimento
