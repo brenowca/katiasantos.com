@@ -1,7 +1,7 @@
 import { strToU8, zipSync } from 'fflate';
 import { useState } from 'preact/hooks';
 import { slices } from '../../shared/geometry';
-import { generateEmailHtml, generateMyHondaFragment, generateMyHondaImageMap } from '../../shared/html';
+import { generateEmailHtml, generateMyHondaFragment, generateMyHondaImageMap, linkCount } from '../../shared/html';
 import type { Project, PublishResult } from '../../shared/model';
 import { getOriginal, getSlice, uploadFull } from '../api';
 import { loadImage, renderFull } from '../slicer';
@@ -18,6 +18,24 @@ export function Published({ project: initial, result, html, onNew }: Props) {
   const [msg, setMsg] = useState<string | null>(null);
   const [packing, setPacking] = useState(false);
   const [preparing, setPreparing] = useState(false);
+  /** Exportação aguardando confirmação porque a campanha não tem nenhum link. */
+  const [pending, setPending] = useState<(() => void) | null>(null);
+  const noLinks = linkCount(project) === 0;
+
+  /**
+   * Toda exportação passa por aqui: sem nenhum link, pede confirmação antes.
+   * A confirmação é na página (não window.confirm) para o clique em "Exportar
+   * mesmo assim" valer como gesto do usuário na área de transferência.
+   */
+  function guard(action: () => void) {
+    return () => (noLinks ? setPending(() => action) : action());
+  }
+
+  function confirmPending() {
+    const action = pending;
+    setPending(null);
+    action?.();
+  }
 
   function flash(s: string) {
     setMsg(s);
@@ -147,24 +165,24 @@ export function Published({ project: initial, result, html, onNew }: Props) {
         </div>
 
         <div class="card space-y-2">
-          <button class="btn-primary w-full justify-center" onClick={downloadMyHondaTxt} disabled={preparing}>
+          <button class="btn-primary w-full justify-center" onClick={guard(downloadMyHondaTxt)} disabled={preparing}>
             {preparing ? 'Preparando…' : 'Baixar .txt para myHonda'}
           </button>
           <p class="text-xs text-ink-3">
             Imagem única com mapa de links, no molde exato de uma campanha aprovada: rodapé obrigatório e contador de abertura incluídos.
           </p>
-          <button class="btn-secondary w-full justify-center" onClick={copyMyHonda} disabled={preparing}>
+          <button class="btn-secondary w-full justify-center" onClick={guard(copyMyHonda)} disabled={preparing}>
             Copiar para myHonda
           </button>
           <p class="text-xs text-ink-3">O mesmo conteúdo do .txt, direto na área de transferência.</p>
-          <button class="btn-secondary w-full justify-center" onClick={copyMyHondaSliced}>Copiar para myHonda (fatiado)</button>
+          <button class="btn-secondary w-full justify-center" onClick={guard(copyMyHondaSliced)}>Copiar para myHonda (fatiado)</button>
           <p class="text-xs text-ink-3">Versão anterior, em tabela de fatias. Use só se a imagem única for recusada.</p>
-          <button class="btn-secondary w-full justify-center" onClick={copyHtml}>Copiar HTML completo</button>
+          <button class="btn-secondary w-full justify-center" onClick={guard(copyHtml)}>Copiar HTML completo</button>
           <p class="text-xs text-ink-3">Documento inteiro, para outras plataformas de disparo.</p>
-          <button class="btn-secondary w-full justify-center" onClick={copyRich}>Copiar como email (Gmail)</button>
+          <button class="btn-secondary w-full justify-center" onClick={guard(copyRich)}>Copiar como email (Gmail)</button>
           <p class="text-xs text-ink-3">Cole direto na mensagem. Os links e imagens vêm junto.</p>
-          <button class="btn-secondary w-full justify-center" onClick={download}>Baixar arquivo .html</button>
-          <button class="btn-secondary w-full justify-center" onClick={downloadPackage} disabled={packing}>
+          <button class="btn-secondary w-full justify-center" onClick={guard(download)}>Baixar arquivo .html</button>
+          <button class="btn-secondary w-full justify-center" onClick={guard(downloadPackage)} disabled={packing}>
             {packing ? 'Montando pacote…' : 'Baixar pacote .zip (HTML + imagens)'}
           </button>
           <p class="text-xs text-ink-3">Para quem prefere hospedar as imagens no próprio servidor. O HTML usa a pasta imagens/.</p>
@@ -173,6 +191,20 @@ export function Published({ project: initial, result, html, onNew }: Props) {
           </a>
           <p class="text-xs text-ink-3">Link público para mandar a quem precisa aprovar.</p>
         </div>
+
+        {pending && (
+          <div class="space-y-3 rounded-lg border border-line bg-amber-50 p-4 text-warn" role="alertdialog" aria-labelledby="no-links-title">
+            <h2 id="no-links-title" class="text-sm font-semibold">Esta campanha não tem nenhum link</h2>
+            <p class="text-sm text-ink-3">
+              Nenhuma célula tem link: o email não terá nada clicável e o mapa de links do myHonda sairá vazio. Para corrigir,
+              duplique a campanha, corte as áreas clicáveis, preencha os links e publique de novo.
+            </p>
+            <div class="flex gap-2">
+              <button class="btn-secondary flex-1 justify-center" onClick={() => setPending(null)}>Cancelar</button>
+              <button class="btn-primary flex-1 justify-center" onClick={confirmPending}>Exportar mesmo assim</button>
+            </div>
+          </div>
+        )}
 
         {msg && <div class="rounded-md border border-accent/30 bg-accent/10 px-3 py-2 text-sm text-accent">{msg}</div>}
 

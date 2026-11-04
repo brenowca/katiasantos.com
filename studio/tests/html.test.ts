@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { splitCell, splitRow, updateCell } from '../src/shared/geometry';
-import { checkLimits, footerLine, generateEmailHtml, generateMyHondaFragment, generateMyHondaImageMap } from '../src/shared/html';
+import { checkLimits, footerLine, generateEmailHtml, generateMyHondaFragment, generateMyHondaImageMap, linkCount } from '../src/shared/html';
 import { fullImageFilename, newProject } from '../src/shared/model';
 
 function sample() {
@@ -136,6 +136,16 @@ describe('generateMyHondaImageMap', () => {
     const png = newProject('x', 'x', { width: 600, height: 100, filename: 'a.png' });
     png.rows[0]!.cells[0]!.format = 'png';
     expect(fullImageFilename(png)).toBe('full.png');
+  });
+});
+
+describe('linkCount', () => {
+  it('conta as células com link e avisa quando não há nenhum', () => {
+    expect(linkCount(sample())).toBe(2);
+    const semLink = newProject('x', 'x', { width: 600, height: 1720, filename: 'a.png' });
+    expect(linkCount(semLink)).toBe(0);
+    expect(checkLimits(semLink, '', null).some((w) => w.message.startsWith('Nenhuma célula tem link'))).toBe(true);
+    expect(checkLimits(sample(), '', null).some((w) => w.message.startsWith('Nenhuma célula tem link'))).toBe(false);
   });
 });
 

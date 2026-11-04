@@ -239,6 +239,11 @@ export function generateMyHondaImageMap(project: Project, folderUrl: string, ful
   ].join('\n');
 }
 
+/** Quantas células têm link. Zero = mapa de links vazio e email sem nada clicável. */
+export function linkCount(project: Pick<Project, 'rows'>): number {
+  return project.rows.reduce((n, r) => n + r.cells.filter((c) => c.href.trim()).length, 0);
+}
+
 export const LIMITS = {
   /** Gmail corta emails com HTML maior que ~102 KB. */
   htmlBytes: 102 * 1024,
@@ -257,6 +262,9 @@ export interface Warning {
 
 export function checkLimits(project: Project, html: string, sliceSizes: Map<string, number> | null): Warning[] {
   const out: Warning[] = [];
+  if (!linkCount(project)) {
+    out.push({ level: 'warn', message: 'Nenhuma célula tem link: o email não terá nada clicável e o mapa de links do myHonda sairá vazio.' });
+  }
   const htmlBytes = new TextEncoder().encode(html).length;
   if (htmlBytes > LIMITS.htmlBytes) {
     out.push({ level: 'error', message: `O HTML tem ${Math.round(htmlBytes / 1024)} KB; o Gmail corta acima de 102 KB.` });
